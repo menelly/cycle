@@ -8,17 +8,12 @@ requests==2.31.0
 reportlab==4.0.7
 pillow==10.1.0
 
-# Local AI (Mistral/Ace) - Quantized for efficiency
-transformers==4.36.2
-torch==2.1.2
-accelerate==0.25.0
-sentencepiece==0.1.99
-protobuf==4.25.1
-bitsandbytes==0.41.3
-scipy==1.11.4
+# vLLM server for AI processing (4-bit quantized LLaVA-Mistral)
+vllm==0.2.7
 
-# Remove Ollama - using pure Python instead
-# ollama==0.1.7
+# Optional: Keep minimal transformers for fallback processing
+# transformers==4.36.2
+# torch==2.1.2
 
 # Data processing & analytics
 numpy==1.24.4

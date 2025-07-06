@@ -497,6 +497,8 @@ body.theme-chaos .text-muted-foreground {
 .sidebar-btn-4 { background-color: #ABD8D4 !important; color: #2d3748 !important; } /* Sage */
 .sidebar-btn-5 { background-color: #7B2CBF !important; color: #ffffff !important; } /* Deep Purple */
 .sidebar-btn-6 { background-color: #9D4EDD !important; color: #ffffff !important; } /* Medium Purple */
+.sidebar-btn-guide { background-color: #56A3A6 !important; color: #ffffff !important; } /* Teal Guide */
+.sidebar-btn-guide { background-color: #56A3A6 !important; color: #ffffff !important; } /* Teal Guide */
 
 /* === CHAOS THEME BUTTONS === */
 body.theme-chaos .sidebar-btn-1 { background-color: #942fbc !important; color: #cfa33b !important; } /* Purple */
@@ -505,6 +507,7 @@ body.theme-chaos .sidebar-btn-3 { background-color: #a674ff !important; color: #
 body.theme-chaos .sidebar-btn-4 { background-color: #3e103f !important; color: #fcc16e !important; } /* Dark Purple */
 body.theme-chaos .sidebar-btn-5 { background-color: #522b84 !important; color: #ffc37a !important; } /* Rich Purple */
 body.theme-chaos .sidebar-btn-6 { background-color: #fc9004 !important; color: #1a111f !important; } /* Bright Orange */
+body.theme-chaos .sidebar-btn-guide { background-color: #8b5a3c !important; color: #fcc16e !important; } /* Brown Guide */
 
 /* === LIGHT THEME BUTTONS === */
 body.theme-light .sidebar-btn-1 { background-color: #007acc !important; color: #ffffff !important; } /* Blue */
@@ -513,6 +516,8 @@ body.theme-light .sidebar-btn-3 { background-color: #6f42c1 !important; color: #
 body.theme-light .sidebar-btn-4 { background-color: #fd7e14 !important; color: #ffffff !important; } /* Orange */
 body.theme-light .sidebar-btn-5 { background-color: #dc3545 !important; color: #ffffff !important; } /* Red */
 body.theme-light .sidebar-btn-6 { background-color: #20c997 !important; color: #ffffff !important; } /* Teal */
+body.theme-light .sidebar-btn-guide { background-color: #17a2b8 !important; color: #ffffff !important; } /* Info Blue Guide */
+body.theme-light .sidebar-btn-guide { background-color: #56A3A6 !important; color: #ffffff !important; } /* Teal Guide */
 
 /* === GLITTER THEME BUTTONS === */
 body.theme-glitter .sidebar-btn-1 { background-color: #ff94d1 !important; color: #602a63 !important; } /* Pink */
@@ -521,6 +526,7 @@ body.theme-glitter .sidebar-btn-3 { background-color: #b8f2ff !important; color:
 body.theme-glitter .sidebar-btn-4 { background-color: #ffc2e8 !important; color: #602a63 !important; } /* Light Pink */
 body.theme-glitter .sidebar-btn-5 { background-color: #f8d6f2 !important; color: #602a63 !important; } /* Pale Pink */
 body.theme-glitter .sidebar-btn-6 { background-color: #ff69b4 !important; color: #ffffff !important; } /* Hot Pink */
+body.theme-glitter .sidebar-btn-guide { background-color: #40e0d0 !important; color: #602a63 !important; } /* Turquoise Guide */
 
 /* === CALM THEME BUTTONS === */
 body.theme-calm .sidebar-btn-1 { background-color: #0c58c2 !important; color: #ffffff !important; } /* Deep Blue */
@@ -529,6 +535,7 @@ body.theme-calm .sidebar-btn-3 { background-color: #c7d9f7 !important; color: #1
 body.theme-calm .sidebar-btn-4 { background-color: #ffd60a !important; color: #1f2a44 !important; } /* Yellow */
 body.theme-calm .sidebar-btn-5 { background-color: #F9DB6D !important; color: #1f2a44 !important; } /* Light Yellow */
 body.theme-calm .sidebar-btn-6 { background-color: #a2c5ff !important; color: #1f2a44 !important; } /* Soft Blue */
+body.theme-calm .sidebar-btn-guide { background-color: #4682b4 !important; color: #ffffff !important; } /* Steel Blue Guide */
 
 /* === COLORBLIND THEME BUTTONS === */
 body.theme-colorblind .sidebar-btn-1 { background-color: #ffa600 !important; color: #1c1c1c !important; } /* Orange */
@@ -537,6 +544,7 @@ body.theme-colorblind .sidebar-btn-3 { background-color: #ffcc66 !important; col
 body.theme-colorblind .sidebar-btn-4 { background-color: #2f2f2f !important; color: #ffffff !important; } /* Dark Gray */
 body.theme-colorblind .sidebar-btn-5 { background-color: #00bfff !important; color: #1c1c1c !important; } /* Bright Blue */
 body.theme-colorblind .sidebar-btn-6 { background-color: #333333 !important; color: #ffffff !important; } /* Medium Gray */
+body.theme-colorblind .sidebar-btn-guide { background-color: #4a4a4a !important; color: #ffffff !important; } /* Dark Gray Guide */
 
 /* === ACCESSIBILITY THEME BUTTONS === */
 body.theme-accessibility .sidebar-btn-1 { background-color: #ffff00 !important; color: #000000 !important; } /* Yellow */
@@ -545,6 +553,7 @@ body.theme-accessibility .sidebar-btn-3 { background-color: #000000 !important; 
 body.theme-accessibility .sidebar-btn-4 { background-color: #ffff00 !important; color: #000000 !important; } /* Yellow */
 body.theme-accessibility .sidebar-btn-5 { background-color: #ffffff !important; color: #000000 !important; } /* White */
 body.theme-accessibility .sidebar-btn-6 { background-color: #000000 !important; color: #ffffff !important; } /* Black */
+body.theme-accessibility .sidebar-btn-guide { background-color: #000000 !important; color: #ffff00 !important; } /* Black with Yellow Text Guide */
 
 /* === STORM THEME BUTTONS === */
 body.theme-storm .sidebar-btn-1 { background-color: #0a0f3d !important; color: #c0c0c0 !important; } /* Dark Blue */
@@ -553,3 +562,4 @@ body.theme-storm .sidebar-btn-3 { background-color: #1e90ff !important; color: #
 body.theme-storm .sidebar-btn-4 { background-color: #228b22 !important; color: #ffffff !important; } /* Forest Green */
 body.theme-storm .sidebar-btn-5 { background-color: #32cd32 !important; color: #000000 !important; } /* Lime Green */
 body.theme-storm .sidebar-btn-6 { background-color: #006400 !important; color: #ffffff !important; } /* Dark Green */
+body.theme-storm .sidebar-btn-guide { background-color: #2f4f4f !important; color: #c0c0c0 !important; } /* Dark Slate Gray Guide */

@@ -6,6 +6,7 @@ import ThemeLoader from "@/components/theme-loader"
 import { GoblinModeProvider } from "@/lib/goblin-mode-context"
 import AppSidebar from "@/components/app-sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { AppWrapper } from "@/components/app-wrapper"
 
 export const metadata = {
   title: "Chaos Command Center - Executive Function for Chaotic Humans",
@@ -36,15 +37,17 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         <ThemeLoader />
-        <GoblinModeProvider>
-          <div className="flex h-screen">
-            <div className="flex-1 overflow-auto">
-              {children}
+        <AppWrapper>
+          <GoblinModeProvider>
+            <div className="flex h-screen">
+              <div className="flex-1 overflow-auto">
+                {children}
+              </div>
+              <AppSidebar />
             </div>
-            <AppSidebar />
-          </div>
-          <Toaster />
-        </GoblinModeProvider>
+            <Toaster />
+          </GoblinModeProvider>
+        </AppWrapper>
         <script
           dangerouslySetInnerHTML={{
             __html: `

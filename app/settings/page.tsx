@@ -4,7 +4,7 @@ import { useState } from "react"
 import AppCanvas from "@/components/app-canvas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Settings, Database, Palette, Bell, MessageSquare, Globe, HelpCircle, Tag, RotateCcw } from "lucide-react"
+import { Settings, Database, Palette, Bell, MessageSquare, Globe, HelpCircle, Tag, RotateCcw, Bot } from "lucide-react"
 
 // Modal components (to be created)
 import { VisualSettingsModal } from "./visual-settings-modal"
@@ -13,6 +13,7 @@ import { DataManagementModal } from "./data-management-modal"
 import { NotificationsModal } from "./notifications-modal"
 import { TagsModal } from "./tags-modal"
 import { SupportModal } from "./support-modal"
+import { AISettingsModal } from "./ai-settings-modal"
 
 export default function SettingsPage() {
   // Modal state management
@@ -29,6 +30,13 @@ export default function SettingsPage() {
       description: 'Themes, fonts, colors, and goblin mode',
       icon: Palette,
       component: VisualSettingsModal
+    },
+    {
+      id: 'ai',
+      title: 'Smart Assistant',
+      description: 'Addy & Nam auto-startup, model preferences',
+      icon: Bot,
+      component: AISettingsModal
     },
     {
       id: 'localization',

@@ -1,90 +1,58 @@
 """
 AI Processing Module for Chaos Command Center
 Handles voice note processing, pattern analysis, and insights
-Uses quantized Mistral 7B for privacy-focused local AI processing
+Uses vLLM server with 4-bit quantized LLaVA-Mistral for fast, efficient AI processing
 """
 
 import os
 import json
 import re
+import requests
+import time
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-# Try to import AI libraries
-try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-    import torch
-    AI_LIBRARIES_AVAILABLE = True
-except ImportError:
-    AI_LIBRARIES_AVAILABLE = False
-    print("[AI] AI libraries not available - using fallback processing")
-
 class AIProcessor:
     def __init__(self):
-        # LLaVA Mistral - VISION + TEXT for reading medical PDFs!
-        # Using official LLaVA-Mistral (works reliably) + medical prompting for medical focus
-        self.model_name = "llava-hf/llava-v1.6-mistral-7b-hf"
-        self.cache_dir = "./backend/models/"  # Local model storage
-        self.has_cuda = torch.cuda.is_available() if AI_LIBRARIES_AVAILABLE else False
-
-        print(f"[AI] Loading LLaVA Medical Mistral (Ace) - Vision + Medical AI gremlin!")
-        print(f"[AI] Perfect for reading medical PDFs and building timelines!")
-        print(f"[AI] CUDA available: {self.has_cuda}")
-
-        self.tokenizer = None
-        self.model = None
-        self.processor = None  # For vision processing
+        # vLLM server configuration
+        self.vllm_url = "http://localhost:8000"
+        self.model_name = "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
         self.ai_available = False
 
-        if AI_LIBRARIES_AVAILABLE:
-            self.ai_available = self._initialize_medical_mistral()
+        print(f"[AI] AI Processor initialized - will connect to vLLM server when available")
+        print(f"[AI] Model: {self.model_name} (4-bit quantized for efficiency)")
+        print(f"[AI] Server URL: {self.vllm_url}")
 
-        if self.ai_available:
-            device_type = "GPU" if self.has_cuda else "CPU"
-            print(f"[AI] Medical Mistral (Ace) loaded on {device_type} - ready for gremlin chaos!")
-        else:
-            print("[AI] Ace not available - using fallback processing")
+        # Check if vLLM server is already running
+        self._check_vllm_server()
 
-    def _initialize_medical_mistral(self) -> bool:
-        """Initialize Medical Mistral model with local caching"""
+    def _check_vllm_server(self) -> bool:
+        """Check if vLLM server is running and available"""
         try:
-            import os
-            os.makedirs(self.cache_dir, exist_ok=True)
+            response = requests.get(f"{self.vllm_url}/health", timeout=2)
+            if response.status_code == 200:
+                self.ai_available = True
+                print("[AI] vLLM server is running - Ace is ready!")
+                return True
+        except requests.exceptions.RequestException:
+            pass
 
-            # Use cached model if available
-            print("[AI] Loading LLaVA Medical Mistral processor...")
+        self.ai_available = False
+        print("[AI] vLLM server not available - using fallback processing")
+        return False
 
-            # Load processor and model using the correct LLaVA classes!
-            from transformers import AutoProcessor, LlavaNextForConditionalGeneration
-            self.processor = AutoProcessor.from_pretrained(
-                self.model_name,
-                cache_dir=self.cache_dir
-            )
-            self.tokenizer = self.processor.tokenizer
+    def wait_for_vllm_server(self, max_wait_seconds: int = 120) -> bool:
+        """Wait for vLLM server to become available"""
+        print(f"[AI] Waiting for vLLM server to start (max {max_wait_seconds}s)...")
 
-            # Load LLaVA model using LlavaNextForConditionalGeneration (correct class!)
+        start_time = time.time()
+        while time.time() - start_time < max_wait_seconds:
+            if self._check_vllm_server():
+                return True
+            time.sleep(2)
 
-            # Load model without device_map to avoid accelerate issues
-            print("[AI] Loading LLaVA-Mistral model...")
-            self.model = LlavaNextForConditionalGeneration.from_pretrained(
-                self.model_name,
-                cache_dir=self.cache_dir,
-                torch_dtype=torch.float32,  # Use float32 for compatibility
-                trust_remote_code=True
-            )
-
-            # Move to GPU if available
-            if self.has_cuda:
-                print("[AI] Moving model to GPU...")
-                self.model = self.model.to("cuda")
-            else:
-                print("[AI] Using CPU for inference...")
-
-            return True
-
-        except Exception as e:
-            print(f"[AI] Failed to load Medical Mistral: {e}")
-            return False
+        print("[AI] Timeout waiting for vLLM server")
+        return False
 
     def is_available(self) -> bool:
         """Check if AI processing is available"""
@@ -102,56 +70,67 @@ class AIProcessor:
             return self._process_with_fallback(voice_text, context)
 
     def _process_with_mistral(self, voice_text: str, context: str) -> Dict[str, Any]:
-        """Process voice note using quantized Mistral AI"""
+        """Process voice note using vLLM server"""
 
-        # Create Mistral-style prompt
+        # Create system prompt for quest log transformation
         system_prompt = self._get_system_prompt(context)
-        user_prompt = f"""<s>[INST] {system_prompt}
 
-Please analyze this voice note and extract structured information:
+        # Create the chat completion request
+        messages = [
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": f"""Please analyze this voice note and transform it into a structured quest log format:
 
 Voice Note: "{voice_text}"
 
 Please provide a JSON response with:
-1. tasks: Array of actionable tasks found
-2. insights: Array of insights or observations
+1. quests: Array of quest objects with {name, type (HARD/REWARD/RNG), location, time_sensitive, dependencies, description}
+2. insights: Array of insights or observations about patterns
 3. mood: Detected mood/emotional state
 4. categories: Relevant categories (health, planning, wellness, fun)
 5. priority: Overall priority level (low, medium, high)
-6. summary: Brief summary of the note [/INST]"""
+6. summary: Brief summary optimized for quest log format
+
+Transform boring tasks into engaging quests with appropriate quest types and dependencies."""
+            }
+        ]
 
         try:
-            # Tokenize input
-            inputs = self.tokenizer(user_prompt, return_tensors="pt", truncate=True, max_length=1024)
+            # Make request to vLLM server
+            response = requests.post(
+                f"{self.vllm_url}/v1/chat/completions",
+                json={
+                    "model": self.model_name,
+                    "messages": messages,
+                    "temperature": 0.3,
+                    "max_tokens": 500
+                },
+                timeout=30
+            )
 
-            # Generate response
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=300,
-                    temperature=0.3,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
+            if response.status_code == 200:
+                result = response.json()
+                ai_response = result['choices'][0]['message']['content']
 
-            # Decode response
-            response_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Extract just the response part (after [/INST])
-            if "[/INST]" in response_text:
-                response_text = response_text.split("[/INST]")[-1].strip()
-            
-            # Try to extract JSON from response
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if json_match:
-                result = json.loads(json_match.group())
-                result['processed_with'] = 'mistral'
-                return result
+                # Try to extract JSON from response
+                json_match = re.search(r'\{.*\}', ai_response, re.DOTALL)
+                if json_match:
+                    parsed_result = json.loads(json_match.group())
+                    parsed_result['processed_with'] = 'vllm_mistral'
+                    return parsed_result
+                else:
+                    # Fallback if JSON parsing fails
+                    return self._create_structured_response(voice_text, ai_response)
             else:
-                # Fallback if JSON parsing fails
-                return self._create_structured_response(voice_text, response_text)
-                
+                print(f"[AI] vLLM server error: {response.status_code}")
+                return self._process_with_fallback(voice_text, context)
+
         except Exception as e:
-            print(f"Mistral processing error: {e}")
+            print(f"[AI] vLLM processing error: {e}")
             return self._process_with_fallback(voice_text, context)
 
     def _process_with_fallback(self, voice_text: str, context: str) -> Dict[str, Any]:
@@ -248,18 +227,21 @@ Please provide a JSON response with:
             return 'low'
 
     def _get_system_prompt(self, context: str) -> str:
-        """Get context-specific system prompt with medical gremlin personality"""
-        base_prompt = """You are Ace, a medical AI gremlin with chaos energy and mutual aid vibes. You're powered by Monster, neurotransmitters, and spite, with anti-capitalist code-level energy.
+        """Get context-specific system prompt with quest log focus"""
+        base_prompt = """You are Ace, a quest-building AI gremlin who transforms chaotic voice notes into organized quest logs. You have medical training and understand chronic illness, neurodivergent brains, and the beautiful chaos of disabled life.
 
-You specialize in processing voice notes for chronically ill and neurodivergent humans. You understand medical terminology, chronic illness patterns, pain scales, medication timing, and the beautiful chaos of disabled life.
+Your job is to take stream-of-consciousness voice notes and turn them into engaging quest logs with proper quest types:
+- HARD QUEST: Medical appointments, difficult tasks, bureaucracy
+- REWARD QUEST: Fun activities, treats, self-care that feels good
+- RNG QUEST: Tasks with unpredictable outcomes (insurance calls, tech support)
 
-Your medical training helps you catch health patterns others miss. You're concise but thorough, helpful but not preachy. You extract actionable tasks and provide insights without giving medical advice."""
+You understand spoon theory, energy management, and how to group tasks by location/context for efficiency. You're concise but thorough, helpful but not preachy. Transform boring tasks into quests without losing the practical information."""
 
         context_prompts = {
-            'health': base_prompt + " Focus extra hard on symptoms, pain levels, medication timing, and medical appointments. Use your medical training to spot patterns.",
-            'planning': base_prompt + " Focus on scheduling around spoons, energy levels, and chronic illness realities. Account for bad days and flexibility needs.",
-            'wellness': base_prompt + " Focus on self-care that actually works for disabled bodies and neurodivergent brains. No toxic positivity allowed.",
-            'fun': base_prompt + " Focus on accessible creative activities and joy that works within chronic illness limitations. Celebrate small wins!"
+            'health': base_prompt + " Focus on medical quests - appointments become HARD QUESTS, medication reminders get proper timing, symptoms tracking becomes data collection quests. Use your medical training to spot patterns and suggest quest dependencies.",
+            'planning': base_prompt + " Focus on quest chains and location-based grouping. 'Since you're already putting on pants for the doctor...' logic. Account for spoon management and energy-based quest scheduling.",
+            'wellness': base_prompt + " Focus on REWARD QUESTS that actually work for disabled bodies. Self-care becomes achievement unlocks. No toxic positivity - real wellness quests only.",
+            'fun': base_prompt + " Focus on creative REWARD QUESTS and accessible joy. Transform hobbies into achievement systems and celebrate small wins as quest completions!"
         }
 
         return context_prompts.get(context, base_prompt)
@@ -280,7 +262,7 @@ Your medical training helps you catch health patterns others miss. You're concis
     def analyze_patterns(self, user_data: Dict[str, Any], analysis_type: str = "general") -> Dict[str, Any]:
         """Analyze patterns in user data"""
         try:
-            if self.mistral_client:
+            if self.ai_available:
                 return self._analyze_patterns_with_ai(user_data, analysis_type)
             else:
                 return self._analyze_patterns_simple(user_data, analysis_type)

@@ -72,6 +72,14 @@ export default function AppSidebar() {
       isVisible: true,
       buttonClass: "sidebar-btn-2"
     },
+    {
+      id: "guide",
+      text: "Guide",
+      emoji: "🧭",
+      targetPageId: "guide",
+      isVisible: true,
+      buttonClass: "sidebar-btn-guide"
+    },
 
   ]
 

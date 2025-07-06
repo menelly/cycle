@@ -30,7 +30,7 @@ CORS(app)  # Enable CORS for frontend communication
 
 # Initialize our services
 pdf_gen = PDFGenerator()
-ai_proc = AIProcessor()
+ai_proc = None  # Will be initialized on demand
 analytics = AnalyticsEngine()
 
 @app.route('/health', methods=['GET'])
@@ -41,10 +41,82 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'services': {
             'pdf': True,
-            'ai': ai_proc.is_available(),
+            'ai': ai_proc.is_available() if ai_proc else False,
             'analytics': True
         }
     })
+
+@app.route('/api/ai/initialize', methods=['POST'])
+def initialize_ai():
+    """Initialize AI processor (now just creates the HTTP client)"""
+    global ai_proc
+    try:
+        if ai_proc is None:
+            logger.info("Initializing AI processor...")
+            from ai_processor import AIProcessor
+            ai_proc = AIProcessor()
+
+        return jsonify({
+            'success': True,
+            'ai_available': ai_proc.is_available(),
+            'message': 'AI processor initialized - ready to connect to vLLM server'
+        })
+    except Exception as e:
+        logger.error(f"Failed to initialize AI: {str(e)}")
+        return jsonify({
+            'success': False,
+            'ai_available': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/ai/vllm/status', methods=['GET'])
+def vllm_status():
+    """Check vLLM server status"""
+    global ai_proc
+    try:
+        if ai_proc is None:
+            from ai_processor import AIProcessor
+            ai_proc = AIProcessor()
+
+        # Check if vLLM server is running
+        is_available = ai_proc._check_vllm_server()
+
+        return jsonify({
+            'vllm_running': is_available,
+            'server_url': ai_proc.vllm_url,
+            'model': ai_proc.model_name
+        })
+    except Exception as e:
+        logger.error(f"Failed to check vLLM status: {str(e)}")
+        return jsonify({
+            'vllm_running': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/ai/vllm/wait', methods=['POST'])
+def wait_for_vllm():
+    """Wait for vLLM server to become available"""
+    global ai_proc
+    try:
+        if ai_proc is None:
+            from ai_processor import AIProcessor
+            ai_proc = AIProcessor()
+
+        # Wait for vLLM server with timeout
+        max_wait = request.json.get('max_wait_seconds', 120) if request.json else 120
+        success = ai_proc.wait_for_vllm_server(max_wait)
+
+        return jsonify({
+            'success': success,
+            'ai_available': ai_proc.is_available(),
+            'message': 'vLLM server is ready!' if success else 'Timeout waiting for vLLM server'
+        })
+    except Exception as e:
+        logger.error(f"Failed to wait for vLLM: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/pdf/generate', methods=['POST'])
 def generate_pdf():
@@ -76,19 +148,27 @@ def generate_pdf():
 def process_voice_note():
     """Process voice note and extract tasks/insights"""
     try:
+        # Check if AI is available
+        if ai_proc is None or not ai_proc.is_available():
+            return jsonify({
+                'error': 'AI assistant not available',
+                'fallback': True,
+                'message': 'Please enable AI assistant in settings'
+            }), 503
+
         data = request.get_json()
-        
+
         if not data or 'text' not in data:
             return jsonify({'error': 'Missing voice text'}), 400
-        
+
         voice_text = data['text']
         context = data.get('context', 'general')
-        
+
         # Process with AI
         result = ai_proc.process_voice_note(voice_text, context)
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Voice processing error: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -97,19 +177,27 @@ def process_voice_note():
 def analyze_patterns():
     """Analyze patterns in user data"""
     try:
+        # Check if AI is available
+        if ai_proc is None or not ai_proc.is_available():
+            return jsonify({
+                'error': 'AI assistant not available',
+                'fallback': True,
+                'message': 'Please enable AI assistant in settings'
+            }), 503
+
         data = request.get_json()
-        
+
         if not data or 'data' not in data:
             return jsonify({'error': 'Missing data for analysis'}), 400
-        
+
         user_data = data['data']
         analysis_type = data.get('type', 'general')
-        
+
         # Analyze patterns
         insights = ai_proc.analyze_patterns(user_data, analysis_type)
-        
+
         return jsonify(insights)
-        
+
     except Exception as e:
         logger.error(f"Pattern analysis error: {str(e)}")
         return jsonify({'error': str(e)}), 500
