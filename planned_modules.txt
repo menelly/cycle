@@ -1,0 +1,201 @@
+🧩 🧠 CORE MODULES — THE FOUNDATIONAL ONES
+These should cover most "normal planner" needs with zero chaos:
+
+Monthly Grid – classic calendar view
+
+Weekly Overview – Mon–Sun boxes (horizontal or vertical)
+
+Daily Layout – broken into Morning / Afternoon / Evening
+
+Hourly Schedule – 6am to 10pm or customizable
+
+Task List / To-Do List – with checkbox rows
+
+Notes Section – blank or lined box
+
+Habit Tracker – grid format, days vs habits
+
+Goals Section – with long/short term split
+
+Important Dates – like a mini timeline
+
+Calendar Strip – 1-week horizontal scroll bar with mini dates
+
+🪄 ADHD/NEURODIVERGENT-FRIENDLY MODULES
+Brain Dump Box – big messy text field, no structure, just vibe-purge
+
+What's the Vibe? – mood tracker with custom emojis or sliders
+
+Executive Dysfunction Timer – write a thing, then start a timer for doing the thing
+
+Novelty Tracker – box that changes color/text/image on schedule
+
+Energy Check-In – AM/PM energy levels (1-5 spoons or lightning bolts ⚡)
+
+Body/Brain Status – dropdowns or emoji selectors for pain, focus, stim level, etc
+
+Reward System – "If I do these 3 things, I get X" tracker
+
+Daily Wins – a place to write one tiny win a day
+
+Guilt-Free Skip Tracker – "I skipped this and the world didn't end" checkbox 💀✅
+
+💼 BUSINESS/SELLER-USEFUL MODULES
+Order Tracker – order #, product, ship date
+
+Income Tracker – date, source, amount
+
+Product Launch Countdown – milestone list
+
+Content Planner – platform, date, content, status
+
+Marketing Checklist – reusable launch checkboxes
+
+Client Notes – lined section with name/date
+
+Monthly Earnings Summary – chart box
+
+Template Usage Tracker – if they reuse layouts to sell new planners
+
+🫀 WELLNESS + LIFE MODULES
+Meal Planner – week grid or freeform
+
+Water Tracker – 8 cups/drops/squares
+
+Symptom Log – tags, checkboxes, free text
+
+Medication Reminder – time, dose, checkbox
+
+Period Tracker – calendar-style or dot grid
+
+Gratitude Box – list 3 things per day
+
+Sleep Tracker – hours slept / quality slider
+
+👻 FUN CHAOS + SELF-EXPRESSION MODULES
+Cat of the Day – image box that rotates ��
+
+Quote Generator – "motivational" or gremlin style
+
+Sticker Wall – reward system where checked items spawn stickers
+
+What Day Is It Again? – box that yells TODAY IS: [day/date/time/planet alignment]
+
+Gremlin Affirmation Generator – things like "You survived capitalism again. 10 XP."
+
+Moodboard Module – image uploads or links
+
+🔧 STRUCTURAL / UTILITY MODULES
+Divider / Section Header
+
+Mini Table / Grid
+
+Two-Column Layout Block
+
+Freeform Layout Box (drag anything into it)
+
+Template Loader – drop in full daily/weekly/monthly templates from saved ones
+
+QR Code Block – link to something (e.g. "scan for grocery list")
+
+# 🗂️ MODULE REBUILD ROADMAP
+# One chat = one module. Do it right once.
+
+## ✅ COMPLETED
+- [x] modern-monthly-calendar.tsx - Typography system integrated, professional design
+
+## 🔥 NUKED (Old janky modules) ✅
+- [x] monthly-calendar.tsx - DELETED ⚡
+- [x] weekly-planner.tsx - DELETED ⚡
+- [x] daily-schedule.tsx - DELETED ⚡
+- [x] habit-tracker.tsx - DELETED ⚡
+- [x] budget-planner.tsx - DELETED ⚡
+- [x] goals-tracker.tsx - DELETED ⚡
+- [x] work-planner.tsx - DELETED ⚡
+- [x] puzzle-game.tsx - DELETED ⚡
+- [x] image-carousel.tsx - DELETED ⚡
+- [ ] custom-module.tsx - Keep for reference, modernize later
+
+## 🏗️ REBUILD PRIORITY ORDER
+### Phase 1: Core Planners (High Usage)
+1. [ ] modern-weekly-planner.tsx
+   - 7-day layout with per-element typography
+   - Visual date headers, task areas
+   - Navigation integration
+
+2. [ ] modern-daily-schedule.tsx  
+   - Hourly time slots
+   - Task/appointment blocks
+   - Typography for times, labels, content
+
+3. [ ] modern-habit-tracker.tsx
+   - Grid layout with proper spacing
+   - Configurable day count
+   - Visual checkboxes/progress
+
+### Phase 2: Productivity Tools
+4. [ ] modern-todo-list.tsx
+   - Clean checkbox design
+   - Priority levels with typography
+   - Completion states
+
+5. [ ] modern-budget-planner.tsx
+   - Income/expense sections
+   - Category-based typography
+   - Visual money formatting
+
+6. [ ] modern-goals-tracker.tsx
+   - Progress bars/indicators
+   - Milestone typography
+   - Status visuals
+
+### Phase 3: Specialized Modules
+7. [ ] modern-work-planner.tsx
+   - Project sections
+   - Meeting blocks
+   - Task typography hierarchy
+
+8. [ ] modern-custom-module.tsx
+   - Field-based system
+   - Typography for each field type
+   - Dynamic layout
+
+### Phase 4: Fun & Games
+9. [ ] modern-puzzle-game.tsx
+   - Clean game interface
+   - Score/timer typography
+   - Interactive elements
+
+10. [ ] modern-image-carousel.tsx
+    - Photo layouts with captions
+    - Typography for descriptions
+    - Gallery controls
+
+## 🎯 DESIGN PRINCIPLES
+- Built-in typography system integration
+- Professional, clean design
+- Proper element hierarchy
+- Print-ready styling
+- Accessibility first
+- No redundant labels by default
+- Smart hover states and interactions
+
+## 📋 EACH MODULE NEEDS:
+- ElementTypographySettings integration
+- CSS variables for all text elements  
+- Hide/show toggles for all elements
+- Proper responsive design
+- Print optimization
+- Clear element naming conventions
+- Smart defaults (large titles, hidden labels)
+
+## 🔄 MIGRATION STRATEGY:
+1. One chat per module rebuild
+2. Copy modern-monthly-calendar patterns
+3. Test in both web and Electron
+4. Update store.ts module types as needed
+5. Remove old module after new one works
+6. Update all import references
+
+---
+**Next up: modern-weekly-planner.tsx**
