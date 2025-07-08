@@ -1,0 +1,27 @@
+# Core Flask backend
+flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+requests==2.31.0
+
+# PDF generation
+reportlab==4.0.7
+pillow==10.1.0
+
+# vLLM server for AI processing (4-bit quantized LLaVA-Mistral)
+vllm==0.2.7
+
+# Optional: Keep minimal transformers for fallback processing
+# transformers==4.36.2
+# torch==2.1.2
+
+# Data processing & analytics
+numpy==1.24.4
+pandas>=2.2.0
+matplotlib==3.8.2
+seaborn==0.13.0
+scikit-learn==1.3.2
+
+# Optional: API fallbacks (if local models fail)
+mistralai==0.1.2
+openai==1.3.7

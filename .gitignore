@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules
 
 # next.js
 /.next/
@@ -52,9 +53,8 @@ ENV/
 env.bak/
 venv.bak/
 
-# Electron
-electron/dist/
-electron/build/
+# Tauri
+src-tauri/target/
 
 # IDE
 .vscode/
@@ -81,6 +81,3 @@ models/
 # Next.js build artifacts
 .next/
 out/
-
-# Electron preload (generated)
-electron/preload.js
