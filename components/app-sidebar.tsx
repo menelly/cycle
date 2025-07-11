@@ -122,8 +122,23 @@ export default function AppSidebar() {
     ]
   }
 
-  // Check if mobile - but don't use it for initial state
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  // Check if mobile - use state to handle window resize
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      // In Tauri desktop app, never treat as mobile
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        setIsMobile(false)
+      } else {
+        setIsMobile(window.innerWidth < 768)
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Load preferences AFTER initial render to prevent hydration issues
   useEffect(() => {
@@ -195,19 +210,25 @@ export default function AppSidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      {isMobile && !showSidebar && (
-        <button
-          onClick={() => setShowSidebar(true)}
-          className="fixed top-4 right-4 z-50 p-2 rounded bg-card border shadow-lg"
-          title="Open menu"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
-      )}
+      {/* Menu toggle button - ALWAYS visible as backup */}
+      <button
+        onClick={() => setShowSidebar(!showSidebar)}
+        className="fixed top-4 left-4 z-[9999] p-3 rounded-lg bg-orange-500 text-white shadow-xl hover:bg-orange-600 transition-colors border-2 border-white"
+        title={showSidebar ? "Close menu" : "Open menu"}
+        style={{
+          position: 'fixed',
+          top: '16px',
+          left: '16px',
+          zIndex: 9999,
+          backgroundColor: '#f97316',
+          color: 'white'
+        }}
+      >
+        {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
 
-      {/* Mobile backdrop */}
-      {isMobile && showSidebar && (
+      {/* Mobile backdrop - only for actual mobile, not Tauri */}
+      {isMobile && showSidebar && !window.__TAURI__ && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setShowSidebar(false)}
@@ -218,18 +239,17 @@ export default function AppSidebar() {
       {showSidebar && (
         <div
           className={`flex flex-col p-3 bg-card border-l-2 border-orange-400 flex-shrink-0 ${
-            isMobile
+            isMobile && !window.__TAURI__
               ? 'fixed top-0 right-0 h-full z-50 shadow-2xl w-[180px]'
               : 'w-[8vw] min-w-[130px] max-w-[180px]'
           }`}
         >
-          {/* Mobile close button */}
-          {isMobile && (
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold">🌪️ Menu</span>
-              <button
-                onClick={() => setShowSidebar(false)}
-                className="p-1 rounded hover:bg-accent transition-colors"
+          {/* Close button - always available */}
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-sm font-bold">🌪️ Menu</span>
+            <button
+              onClick={() => setShowSidebar(false)}
+              className="p-1 rounded hover:bg-accent transition-colors"
                 title="Close menu"
               >
                 <X className="h-4 w-4" />

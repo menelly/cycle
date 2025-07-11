@@ -3,14 +3,18 @@ import "./globals.css"
 import "../styles/chaos-themes.css"
 import ThemeLoader from "@/components/theme-loader"
 
-import { GoblinModeProvider } from "@/lib/goblin-mode-context"
-import AppSidebar from "@/components/app-sidebar"
+
 import { Toaster } from "@/components/ui/toaster"
+
+// Import modular components
 import { AppWrapper } from "@/components/app-wrapper"
+import MobileBottomNav from "@/components/mobile-bottom-nav"
+// import AddyChatBubble from "@/components/addy-chat-bubble"
+// import { ModuleRouter } from "@/lib/module-router"
 
 export const metadata = {
-  title: "Chaos Command Center - Executive Function for Chaotic Humans",
-  description: "Your beautifully chaotic life management system - because normal is overrated",
+  title: "Chaos Cycle - Fertility & Cycle Tracking",
+  description: "Your secure, private fertility and menstrual cycle tracking app with BBT charts and ovulation prediction",
 }
 
 export default function RootLayout({
@@ -38,15 +42,12 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         <ThemeLoader />
         <AppWrapper>
-          <GoblinModeProvider>
-            <div className="flex h-screen">
-              <div className="flex-1 overflow-auto">
-                {children}
-              </div>
-              <AppSidebar />
-            </div>
-            <Toaster />
-          </GoblinModeProvider>
+          <div className="min-h-screen pb-16">
+            {children}
+          </div>
+          <MobileBottomNav />
+          {/* <AddyChatBubble /> */}
+          <Toaster />
         </AppWrapper>
         <script
           dangerouslySetInnerHTML={{

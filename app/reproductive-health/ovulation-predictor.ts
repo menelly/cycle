@@ -1,316 +1,384 @@
-/**
- * OVULATION PREDICTION ENGINE 🧠✨
- * 
- * Smart algorithm that learns from cycle data to predict ovulation
- * Gets smarter with more data - starts basic, becomes genius!
- */
+import { differenceInDays, format } from 'date-fns'
 
-import { ReproductiveHealthEntry } from './reproductive-health-tracker'
+interface FertilityAnalysis {
+  ovulationDetected: boolean
+  confidence: 'low' | 'medium' | 'high'
+  method: string
+  daysUntilOvulation: number | null
+  status: 'pre-ovulation' | 'ovulation-likely' | 'post-ovulation' | 'unknown'
+  message: string
+}
+
+export interface CycleEntry {
+  date: string
+  flow?: string
+  opk?: string
+  bbt?: number | null
+  cervicalFluid?: string
+}
 
 export interface OvulationPrediction {
   predictedDay: number | null
-  confidence: 'low' | 'medium' | 'high' | 'confirmed'
-  method: 'cycle-length' | 'bbt-pattern' | 'opk-surge' | 'cervical-fluid' | 'combined'
+  confidence: 'low' | 'medium' | 'high'
+  method: string
   fertileWindowStart: number | null
   fertileWindowEnd: number | null
   daysUntilOvulation: number | null
+  status: 'pre-ovulation' | 'ovulation-likely' | 'post-ovulation' | 'unknown'
   message: string
-  isLate: boolean // If we're past predicted ovulation without confirmation
 }
 
-export interface CycleData {
-  cycleLength: number
-  ovulationDay: number | null
-  lutealPhaseLength: number | null
-  entries: ReproductiveHealthEntry[]
+/**
+ * SMART MULTI-FACTOR FERTILITY ANALYSIS
+ * Weighs BBT, OPK, cervical mucus, and ferning together
+ */
+function analyzeAllFertilitySigns(entries: CycleEntry[], today: Date): FertilityAnalysis {
+  const sortedEntries = entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  // Get recent data for each sign
+  const recentOPKs = entries.filter(e => e.opk && e.opk !== 'negative')
+  const recentBBTs = entries.filter(e => e.bbt !== null && e.bbt !== undefined)
+  const recentCM = entries.filter(e => e.cervicalFluid && e.cervicalFluid !== '')
+  const recentFerning = entries.filter(e => e.ferning && e.ferning !== 'none')
+
+  console.log('🔬 MULTI-FACTOR DEBUG: OPKs:', recentOPKs.length, 'BBTs:', recentBBTs.length, 'CM:', recentCM.length)
+
+  // 1. CHECK BBT TEMPERATURE SHIFT (HIGHEST PRIORITY - most reliable)
+  const bbtAnalysis = analyzeBBTShift(recentBBTs, today)
+  if (bbtAnalysis.ovulationDetected) {
+    console.log('🌡️ BBT shift detected - using as primary indicator')
+    return bbtAnalysis
+  }
+
+  // 2. CHECK OPK + SUPPORTING SIGNS
+  const opkAnalysis = analyzeOPKWithSupport(recentOPKs, recentCM, recentFerning, today)
+  if (opkAnalysis.ovulationDetected) {
+    console.log('🧪 OPK + supporting signs detected')
+    return opkAnalysis
+  }
+
+  // 3. CHECK CERVICAL MUCUS PATTERNS
+  const cmAnalysis = analyzeCervicalMucus(recentCM, today)
+  if (cmAnalysis.ovulationDetected) {
+    console.log('💧 Cervical mucus pattern detected')
+    return cmAnalysis
+  }
+
+  // 4. FALLBACK TO SINGLE OPK DATA
+  const basicOPK = analyzeBasicOPK(recentOPKs, today)
+  if (basicOPK.ovulationDetected) {
+    console.log('🧪 Basic OPK data only')
+    return basicOPK
+  }
+
+  return {
+    ovulationDetected: false,
+    confidence: 'low',
+    method: 'insufficient-data',
+    daysUntilOvulation: null,
+    status: 'unknown',
+    message: 'Not enough fertility signs detected. Keep tracking!'
+  }
 }
 
-export class OvulationPredictor {
-  
-  /**
-   * Main prediction function - the fertility brain! 🧠
-   */
-  static predictOvulation(
-    currentCycleDay: number,
-    currentCycleEntries: ReproductiveHealthEntry[],
-    historicalCycles: CycleData[]
-  ): OvulationPrediction {
-    
-    // Start with basic cycle math
-    let prediction = this.getBasicPrediction(currentCycleDay, historicalCycles)
-    
-    // Enhance with BBT analysis
-    const bbtPrediction = this.analyzeBBTPattern(currentCycleEntries)
-    if (bbtPrediction.confidence !== 'low') {
-      prediction = this.combinePredictions(prediction, bbtPrediction)
-    }
-    
-    // Enhance with OPK data
-    const opkPrediction = this.analyzeOPKPattern(currentCycleEntries, currentCycleDay)
-    if (opkPrediction.confidence !== 'low') {
-      prediction = this.combinePredictions(prediction, opkPrediction)
-    }
-    
-    // Enhance with cervical fluid
-    const fluidPrediction = this.analyzeCervicalFluid(currentCycleEntries, currentCycleDay)
-    if (fluidPrediction.confidence !== 'low') {
-      prediction = this.combinePredictions(prediction, fluidPrediction)
-    }
-    
-    // Check if we're past predicted ovulation
-    prediction.isLate = this.checkIfLate(prediction, currentCycleDay)
-    
-    return prediction
+/**
+ * BBT TEMPERATURE SHIFT ANALYSIS (MOST RELIABLE)
+ * Looks for sustained temperature rise of 0.2°F+ for 3+ days
+ */
+function analyzeBBTShift(bbtEntries: CycleEntry[], today: Date): FertilityAnalysis {
+  if (bbtEntries.length < 6) {
+    return { ovulationDetected: false, confidence: 'low', method: 'insufficient-bbt', daysUntilOvulation: null, status: 'unknown', message: '' }
   }
-  
-  /**
-   * Basic cycle length prediction - where we start! 📅
-   */
-  private static getBasicPrediction(currentCycleDay: number, historicalCycles: CycleData[]): OvulationPrediction {
-    // No default assumptions - use actual data or intelligent estimates
-    let avgCycleLength: number | null = null
-    let avgOvulationDay: number | null = null
-    
-    if (historicalCycles.length > 0) {
-      // Learn from user's actual cycles
-      const validCycles = historicalCycles.filter(c => c.cycleLength > 0)
-      if (validCycles.length > 0) {
-        avgCycleLength = Math.round(validCycles.reduce((sum, c) => sum + c.cycleLength, 0) / validCycles.length)
 
-        // If we have confirmed ovulation days, use those
-        const ovulationCycles = validCycles.filter(c => c.ovulationDay !== null)
-        if (ovulationCycles.length > 0) {
-          avgOvulationDay = Math.round(ovulationCycles.reduce((sum, c) => sum + c.ovulationDay!, 0) / ovulationCycles.length)
-        } else {
-          // Estimate: ovulation typically 12-16 days before next period
-          avgOvulationDay = Math.max(10, avgCycleLength - 14)
-        }
-      }
-    }
+  // Sort by date (most recent first)
+  const sortedBBT = bbtEntries
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10) // Last 10 days
 
-    // If no historical data, we can't make reliable predictions
-    if (avgOvulationDay === null) {
+  // Look for temperature shift pattern
+  for (let i = 3; i < sortedBBT.length - 2; i++) {
+    const currentTemp = sortedBBT[i].bbt!
+    const prevTemp1 = sortedBBT[i + 1].bbt!
+    const prevTemp2 = sortedBBT[i + 2].bbt!
+    const nextTemp1 = sortedBBT[i - 1].bbt!
+    const nextTemp2 = sortedBBT[i - 2].bbt!
+    const nextTemp3 = sortedBBT[i - 3].bbt!
+
+    // Check if we have a sustained rise
+    const preOvulationAvg = (prevTemp1 + prevTemp2) / 2
+    const postOvulationAvg = (nextTemp1 + nextTemp2 + nextTemp3) / 3
+    const tempRise = postOvulationAvg - preOvulationAvg
+
+    if (tempRise >= 0.2) {
+      // Found temperature shift!
+      const ovulationDate = new Date(sortedBBT[i].date)
+      const daysAgo = differenceInDays(today, ovulationDate)
+
       return {
-        predictedDay: null,
-        confidence: 'low',
-        method: 'cycle-length',
-        fertileWindowStart: null,
-        fertileWindowEnd: null,
-        daysUntilOvulation: null,
-        message: 'Need more cycle data for predictions. Track a few cycles to get started! 📊',
-        isLate: false
-      }
-    }
-
-    const daysUntil = avgOvulationDay - currentCycleDay
-    
-    return {
-      predictedDay: avgOvulationDay,
-      confidence: historicalCycles.length >= 3 ? 'medium' : 'low',
-      method: 'cycle-length',
-      fertileWindowStart: Math.max(1, avgOvulationDay - 5),
-      fertileWindowEnd: avgOvulationDay + 1,
-      daysUntilOvulation: daysUntil > 0 ? daysUntil : null,
-      message: daysUntil > 0 
-        ? `Predicted ovulation in ${daysUntil} days (day ${avgOvulationDay})`
-        : daysUntil === 0
-        ? `Predicted ovulation TODAY! 🥚✨`
-        : `Predicted ovulation was ${Math.abs(daysUntil)} days ago`,
-      isLate: false
-    }
-  }
-  
-  /**
-   * BBT Pattern Analysis - the temperature detective! 🌡️
-   */
-  private static analyzeBBTPattern(entries: ReproductiveHealthEntry[], currentDay: number): OvulationPrediction {
-    const bbtEntries = entries
-      .filter(e => e.bbt !== null && e.bbt !== undefined)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    if (bbtEntries.length < 6) {
-      return { predictedDay: null, confidence: 'low', method: 'bbt-pattern', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'Need more BBT data', isLate: false }
-    }
-    
-    // Look for temperature shift (3+ consecutive temps 0.2°F+ higher)
-    const recentTemps = bbtEntries.slice(-10) // Last 10 days
-    
-    for (let i = 3; i < recentTemps.length; i++) {
-      const currentTemp = recentTemps[i].bbt!
-      const previousTemps = recentTemps.slice(i-3, i).map(e => e.bbt!)
-      const avgPrevious = previousTemps.reduce((sum, temp) => sum + temp, 0) / previousTemps.length
-      
-      // Check if current temp is significantly higher
-      if (currentTemp >= avgPrevious + 0.2) {
-        // Check if this pattern continues
-        const followingTemps = recentTemps.slice(i, i+3)
-        const allHigher = followingTemps.every(e => e.bbt! >= avgPrevious + 0.2)
-        
-        if (allHigher && followingTemps.length >= 2) {
-          // Ovulation likely occurred 1-2 days before temp rise
-          const ovulationEntry = recentTemps[i-1]
-          const ovulationDay = this.getEntryDayOfCycle(ovulationEntry)
-          
-          return {
-            predictedDay: ovulationDay,
-            confidence: 'confirmed',
-            method: 'bbt-pattern',
-            fertileWindowStart: Math.max(1, ovulationDay - 5),
-            fertileWindowEnd: ovulationDay + 1,
-            daysUntilOvulation: null,
-            message: `Ovulation CONFIRMED by BBT pattern! Occurred around day ${ovulationDay} 🌡️✅`,
-            isLate: false
-          }
-        }
-      }
-    }
-    
-    return { predictedDay: null, confidence: 'low', method: 'bbt-pattern', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'No BBT shift detected yet', isLate: false }
-  }
-  
-  /**
-   * OPK Analysis - the surge detector! 🧪
-   */
-  private static analyzeOPKPattern(entries: ReproductiveHealthEntry[], currentDay: number): OvulationPrediction {
-    const opkEntries = entries
-      .filter(e => e.opk !== null && e.opk !== undefined)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    if (opkEntries.length === 0) {
-      return { predictedDay: null, confidence: 'low', method: 'opk-surge', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'No OPK data yet', isLate: false }
-    }
-    
-    // Look for peak OPK result
-    const recentOPKs = opkEntries.slice(-5) // Last 5 tests
-    const peakResult = recentOPKs.find(e => e.opk === 'peak')
-    
-    if (peakResult) {
-      const peakDay = this.getEntryDayOfCycle(peakResult)
-      const ovulationDay = peakDay + 1 // Ovulation typically 12-36 hours after peak
-      const daysUntil = ovulationDay - currentDay
-      
-      return {
-        predictedDay: ovulationDay,
+        ovulationDetected: true,
         confidence: 'high',
-        method: 'opk-surge',
-        fertileWindowStart: Math.max(1, peakDay - 2),
-        fertileWindowEnd: ovulationDay + 1,
-        daysUntilOvulation: daysUntil > 0 ? daysUntil : null,
-        message: daysUntil > 0 
-          ? `OPK PEAK detected! Ovulation expected in ${daysUntil} days 🧪🎯`
-          : `OPK peak was ${Math.abs(daysUntil)} days ago - ovulation likely occurred!`,
-        isLate: false
+        method: 'bbt-temperature-shift',
+        daysUntilOvulation: -daysAgo,
+        status: 'post-ovulation',
+        message: `BBT temperature shift detected. Ovulation occurred ~${daysAgo} days ago.`
       }
     }
-    
-    // Look for high OPK (approaching surge)
-    const highResult = recentOPKs.find(e => e.opk === 'high')
-    if (highResult) {
-      const highDay = this.getEntryDayOfCycle(highResult)
-      console.log('🧪 OPK ANALYSIS DEBUG:')
-      console.log('  - HIGH OPK entry:', highResult)
-      console.log('  - Calculated highDay:', highDay)
-      console.log('  - currentDay passed:', currentDay)
-      console.log('  - predictedDay:', highDay + 2)
-      console.log('  - daysUntilOvulation calc:', `(${highDay} + 2) - ${currentDay} = ${(highDay + 2) - currentDay}`)
+  }
 
-      return {
-        predictedDay: highDay + 2,
-        confidence: 'medium',
-        method: 'opk-surge',
-        fertileWindowStart: Math.max(1, highDay - 1),
-        fertileWindowEnd: highDay + 3,
-        daysUntilOvulation: (highDay + 2) - currentDay,
-        message: `OPK showing HIGH - surge approaching! 🧪📈`,
-        isLate: false
-      }
-    }
-    
-    return { predictedDay: null, confidence: 'low', method: 'opk-surge', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'No OPK surge detected yet', isLate: false }
-  }
-  
-  /**
-   * Cervical Fluid Analysis - the fertility fluid detective! 💧
-   */
-  private static analyzeCervicalFluid(entries: ReproductiveHealthEntry[], currentDay: number): OvulationPrediction {
-    const fluidEntries = entries
-      .filter(e => e.cervicalFluid && e.cervicalFluid !== '')
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    if (fluidEntries.length === 0) {
-      return { predictedDay: null, confidence: 'low', method: 'cervical-fluid', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'No cervical fluid data', isLate: false }
-    }
-    
-    // Look for egg-white consistency (peak fertility)
-    const recentFluid = fluidEntries.slice(-7) // Last week
-    const eggWhiteDay = recentFluid.find(e => e.cervicalFluid === 'egg-white')
-    
-    if (eggWhiteDay) {
-      const eggWhiteDate = this.getEntryDayOfCycle(eggWhiteDay)
-      const ovulationDay = eggWhiteDate + 1 // Ovulation typically day of or day after peak fluid
-      const daysUntil = ovulationDay - currentDay
-      
-      return {
-        predictedDay: ovulationDay,
-        confidence: 'medium',
-        method: 'cervical-fluid',
-        fertileWindowStart: Math.max(1, eggWhiteDate - 2),
-        fertileWindowEnd: ovulationDay + 1,
-        daysUntilOvulation: daysUntil > 0 ? daysUntil : null,
-        message: daysUntil > 0 
-          ? `Egg-white fluid detected! Ovulation expected in ${daysUntil} days 💧🥚`
-          : `Peak fertile fluid was ${Math.abs(daysUntil)} days ago`,
-        isLate: false
-      }
-    }
-    
-    return { predictedDay: null, confidence: 'low', method: 'cervical-fluid', fertileWindowStart: null, fertileWindowEnd: null, daysUntilOvulation: null, message: 'No peak fertile fluid yet', isLate: false }
-  }
-  
-  /**
-   * Combine multiple predictions - the wisdom synthesizer! 🧠✨
-   */
-  private static combinePredictions(pred1: OvulationPrediction, pred2: OvulationPrediction): OvulationPrediction {
-    // Prioritize confirmed predictions
-    if (pred2.confidence === 'confirmed') return pred2
-    if (pred1.confidence === 'confirmed') return pred1
-    
-    // Combine high confidence predictions
-    if (pred1.confidence === 'high' && pred2.confidence === 'high') {
-      const avgDay = Math.round(((pred1.predictedDay || 0) + (pred2.predictedDay || 0)) / 2)
-      return {
-        ...pred1,
-        predictedDay: avgDay,
-        method: 'combined',
-        message: `Multiple signals point to ovulation around day ${avgDay}! 🎯✨`
-      }
-    }
-    
-    // Return the higher confidence prediction
-    const confidenceOrder = { 'confirmed': 4, 'high': 3, 'medium': 2, 'low': 1 }
-    return confidenceOrder[pred2.confidence] > confidenceOrder[pred1.confidence] ? pred2 : pred1
-  }
-  
-  /**
-   * Check if we're past predicted ovulation without confirmation
-   */
-  private static checkIfLate(prediction: OvulationPrediction, currentDay: number): boolean {
-    if (!prediction.predictedDay || prediction.confidence === 'confirmed') return false
-    return currentDay > prediction.predictedDay + 2 // 2 days past prediction
-  }
-  
-  /**
-   * Helper to get cycle day from entry - needs to match BBT chart calculation
-   */
-  private static getEntryDayOfCycle(entry: ReproductiveHealthEntry): number {
-    // For now, we'll estimate based on current cycle day calculation
-    // This should match the cycle day calculation from bbt-chart.tsx
-    const entryDate = new Date(entry.date)
-    const today = new Date()
-    const daysSinceToday = Math.floor((entryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  return { ovulationDetected: false, confidence: 'low', method: 'no-bbt-shift', daysUntilOvulation: null, status: 'unknown', message: '' }
+}
 
-    // Assume current day 13 (matching bbt-chart.tsx logic)
-    const estimatedCurrentDay = 13
-    return Math.max(1, estimatedCurrentDay + daysSinceToday)
+/**
+ * OPK WITH SUPPORTING SIGNS ANALYSIS
+ */
+function analyzeOPKWithSupport(opkEntries: CycleEntry[], cmEntries: CycleEntry[], ferningEntries: CycleEntry[], today: Date): FertilityAnalysis {
+  if (opkEntries.length === 0) {
+    return { ovulationDetected: false, confidence: 'low', method: 'no-opk', daysUntilOvulation: null, status: 'unknown', message: '' }
+  }
+
+  const mostRecentOPK = opkEntries[0]
+  const daysSinceOPK = differenceInDays(today, new Date(mostRecentOPK.date))
+
+  if (daysSinceOPK > 7) {
+    return { ovulationDetected: false, confidence: 'low', method: 'old-opk', daysUntilOvulation: null, status: 'unknown', message: '' }
+  }
+
+  // Check for supporting signs
+  let supportingSignsCount = 0
+  let supportingDetails = []
+
+  // Check cervical mucus
+  const recentCM = cmEntries.find(e => differenceInDays(today, new Date(e.date)) <= 3)
+  if (recentCM) {
+    if (recentCM.cervicalFluid === 'egg-white') {
+      supportingSignsCount++
+      supportingDetails.push('egg-white CM')
+    } else if (['creamy', 'sticky'].includes(recentCM.cervicalFluid!) && mostRecentOPK.opk === 'peak') {
+      supportingSignsCount++
+      supportingDetails.push('CM change after peak')
+    }
+  }
+
+  // Check ferning
+  const recentFerning = ferningEntries.find(e => differenceInDays(today, new Date(e.date)) <= 2)
+  if (recentFerning?.ferning === 'full') {
+    supportingSignsCount++
+    supportingDetails.push('full ferning')
+  }
+
+  if (mostRecentOPK.opk === 'peak') {
+    const confidence = supportingSignsCount >= 2 ? 'high' : supportingSignsCount >= 1 ? 'medium' : 'low'
+    const method = supportingSignsCount > 0 ? 'opk-peak-with-support' : 'opk-peak-only'
+
+    return {
+      ovulationDetected: true,
+      confidence,
+      method,
+      daysUntilOvulation: daysSinceOPK === 0 ? 0 : -daysSinceOPK,
+      status: daysSinceOPK === 0 ? 'ovulation-likely' : 'post-ovulation',
+      message: daysSinceOPK === 0
+        ? `OPK peak detected${supportingDetails.length > 0 ? ` with ${supportingDetails.join(', ')}` : ''}! Ovulation likely today.`
+        : `Ovulation likely occurred ${daysSinceOPK} day${daysSinceOPK > 1 ? 's' : ''} ago${supportingDetails.length > 0 ? ` (${supportingDetails.join(', ')})` : ''}.`
+    }
+  }
+
+  return { ovulationDetected: false, confidence: 'low', method: 'no-peak-opk', daysUntilOvulation: null, status: 'unknown', message: '' }
+}
+
+/**
+ * CERVICAL MUCUS PATTERN ANALYSIS
+ */
+function analyzeCervicalMucus(cmEntries: CycleEntry[], today: Date): FertilityAnalysis {
+  if (cmEntries.length < 3) {
+    return { ovulationDetected: false, confidence: 'low', method: 'insufficient-cm', daysUntilOvulation: null, status: 'unknown', message: '' }
+  }
+
+  const sortedCM = cmEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  // Look for egg-white to creamy/sticky transition (indicates ovulation occurred)
+  for (let i = 0; i < sortedCM.length - 1; i++) {
+    const current = sortedCM[i]
+    const previous = sortedCM[i + 1]
+
+    if (['creamy', 'sticky'].includes(current.cervicalFluid!) && previous.cervicalFluid === 'egg-white') {
+      const daysAgo = differenceInDays(today, new Date(previous.date))
+      if (daysAgo <= 5) {
+        return {
+          ovulationDetected: true,
+          confidence: 'medium',
+          method: 'cervical-mucus-pattern',
+          daysUntilOvulation: -daysAgo,
+          status: 'post-ovulation',
+          message: `Cervical mucus pattern suggests ovulation occurred ~${daysAgo} days ago.`
+        }
+      }
+    }
+  }
+
+  return { ovulationDetected: false, confidence: 'low', method: 'no-cm-pattern', daysUntilOvulation: null, status: 'unknown', message: '' }
+}
+
+/**
+ * BASIC OPK ANALYSIS (FALLBACK)
+ */
+function analyzeBasicOPK(opkEntries: CycleEntry[], today: Date): FertilityAnalysis {
+  if (opkEntries.length === 0) {
+    return { ovulationDetected: false, confidence: 'low', method: 'no-opk-data', daysUntilOvulation: null, status: 'unknown', message: '' }
+  }
+
+  const mostRecentOPK = opkEntries[0]
+  const daysSinceOPK = differenceInDays(today, new Date(mostRecentOPK.date))
+
+  if (mostRecentOPK.opk === 'peak' && daysSinceOPK <= 7) {
+    return {
+      ovulationDetected: true,
+      confidence: daysSinceOPK <= 2 ? 'medium' : 'low',
+      method: 'basic-opk-peak',
+      daysUntilOvulation: daysSinceOPK === 0 ? 0 : -daysSinceOPK,
+      status: daysSinceOPK === 0 ? 'ovulation-likely' : 'post-ovulation',
+      message: daysSinceOPK === 0
+        ? 'OPK peak detected! Ovulation likely today.'
+        : `OPK peak was ${daysSinceOPK} day${daysSinceOPK > 1 ? 's' : ''} ago. Ovulation likely occurred.`
+    }
+  }
+
+  if (mostRecentOPK.opk === 'high' && daysSinceOPK <= 1) {
+    return {
+      ovulationDetected: true,
+      confidence: 'low',
+      method: 'basic-opk-high',
+      daysUntilOvulation: 1,
+      status: 'pre-ovulation',
+      message: 'High OPK detected. Ovulation may occur within 1-2 days.'
+    }
+  }
+
+  return { ovulationDetected: false, confidence: 'low', method: 'no-recent-opk', daysUntilOvulation: null, status: 'unknown', message: '' }
+}
+
+/**
+ * SIMPLE OVULATION PREDICTION - NO FANCY BULLSHIT
+ * Just basic math based on cycle day and recent data
+ */
+export function predictOvulation(
+  entries: CycleEntry[],
+  lmpDate: string | null,
+  averageCycleLength: number = 28
+): OvulationPrediction {
+  const today = new Date()
+  const todayStr = format(today, 'yyyy-MM-dd')
+
+  // DEBUG: Log what we're working with
+  console.log('🔮 PREDICTOR DEBUG: Input entries:', entries.length)
+  console.log('🔮 PREDICTOR DEBUG: LMP Date:', lmpDate)
+  console.log('🔮 PREDICTOR DEBUG: Sample entries:', entries.slice(0, 3))
+
+  // Default "I don't know" response
+  const unknownResult: OvulationPrediction = {
+    predictedDay: null,
+    confidence: 'low',
+    method: 'insufficient-data',
+    fertileWindowStart: null,
+    fertileWindowEnd: null,
+    daysUntilOvulation: null,
+    status: 'unknown',
+    message: 'Not enough data for prediction. Keep tracking!'
+  }
+
+  // Check for recent OPK data FIRST (last 7 days only - ignore ancient history!)
+  const recentEntries = entries
+    .filter(entry => {
+      const entryDate = new Date(entry.date)
+      const daysAgo = differenceInDays(today, entryDate)
+      return daysAgo >= 0 && daysAgo <= 7 // Only last week
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Most recent first
+
+  const recentOPKs = recentEntries.filter(entry => entry.opk && entry.opk !== 'negative')
+  const mostRecentOPK = recentOPKs[0]
+
+  // DEBUG: Log OPK data
+  console.log('🔮 PREDICTOR DEBUG: Recent entries:', recentEntries.length)
+  console.log('🔮 PREDICTOR DEBUG: Recent OPKs:', recentOPKs)
+  console.log('🔮 PREDICTOR DEBUG: Most recent OPK:', mostRecentOPK)
+
+  // MULTI-FACTOR ANALYSIS - Check ALL the signs!
+  const analysis = analyzeAllFertilitySigns(recentEntries, today)
+
+  if (analysis.ovulationDetected) {
+    return {
+      predictedDay: null, // Can't calculate cycle day without LMP
+      confidence: analysis.confidence,
+      method: analysis.method,
+      fertileWindowStart: null,
+      fertileWindowEnd: null,
+      daysUntilOvulation: analysis.daysUntilOvulation,
+      status: analysis.status,
+      message: analysis.message
+    }
+  }
+
+  // Now check if we need LMP for cycle-based prediction
+  if (!lmpDate) {
+    return {
+      ...unknownResult,
+      message: 'No recent OPK data and no cycle start date. Keep tracking!'
+    }
+  }
+
+  // Calculate current cycle day (only if we have LMP)
+  const cycleDay = differenceInDays(today, new Date(lmpDate)) + 1
+
+  // Basic cycle-based prediction (ovulation around day 14 for 28-day cycle)
+  const estimatedOvulationDay = Math.round(averageCycleLength * 0.5) // Roughly middle of cycle
+  const daysUntilEstimatedOvulation = estimatedOvulationDay - cycleDay
+
+  // Continue with cycle-based prediction since we have LMP
+
+  // Fall back to cycle-based estimation
+  if (cycleDay >= 5 && cycleDay <= (averageCycleLength - 5)) {
+    const fertileStart = Math.max(1, estimatedOvulationDay - 5)
+    const fertileEnd = Math.min(averageCycleLength, estimatedOvulationDay + 1)
+    
+    if (cycleDay >= fertileStart && cycleDay <= fertileEnd) {
+      return {
+        predictedDay: estimatedOvulationDay,
+        confidence: 'medium',
+        method: 'cycle-based',
+        fertileWindowStart: fertileStart,
+        fertileWindowEnd: fertileEnd,
+        daysUntilOvulation: daysUntilEstimatedOvulation,
+        status: daysUntilEstimatedOvulation > 0 ? 'pre-ovulation' : 'post-ovulation',
+        message: daysUntilEstimatedOvulation > 0 
+          ? `Estimated ovulation in ${daysUntilEstimatedOvulation} days (cycle day ${estimatedOvulationDay})`
+          : `Estimated ovulation was ${Math.abs(daysUntilEstimatedOvulation)} days ago`
+      }
+    }
+  }
+
+  // Too early or too late in cycle
+  if (cycleDay < 5) {
+    return {
+      predictedDay: estimatedOvulationDay,
+      confidence: 'low',
+      method: 'cycle-based',
+      fertileWindowStart: Math.max(1, estimatedOvulationDay - 5),
+      fertileWindowEnd: estimatedOvulationDay + 1,
+      daysUntilOvulation: daysUntilEstimatedOvulation,
+      status: 'pre-ovulation',
+      message: `Too early in cycle for ovulation. Estimated ovulation in ${daysUntilEstimatedOvulation} days.`
+    }
+  }
+
+  // Late in cycle - probably past ovulation
+  return {
+    predictedDay: estimatedOvulationDay,
+    confidence: 'low',
+    method: 'cycle-based',
+    fertileWindowStart: null,
+    fertileWindowEnd: null,
+    daysUntilOvulation: null,
+    status: 'post-ovulation',
+    message: 'Likely past ovulation for this cycle. Period may be due soon.'
   }
 }

@@ -8,15 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import {
   ChevronLeft,
   ChevronRight,
-  Settings,
   Search,
-  Star,
   BookOpen,
   Brain,
   MessageCircle,
   Heart,
-  Sparkles,
-  Camera
+  Sparkles
 } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
 import { RichJournalEditor } from './rich-journal-editor';
@@ -38,7 +35,7 @@ const DEFAULT_TABS: JournalTab[] = [
     id: 'main',
     name: 'Main',
     icon: <BookOpen className="h-4 w-4" />,
-    description: 'General journal entries and photo documentation',
+    description: 'General journal entries with rich text and inline photos',
     enabled: true,
     placeholder: 'What\'s on your mind today? How are you feeling? What happened?'
   },
@@ -86,8 +83,6 @@ export default function UnifiedJournal() {
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   // Get enabled tabs only
   const enabledTabs = availableTabs.filter(tab => tab.enabled);
@@ -140,24 +135,7 @@ export default function UnifiedJournal() {
           </Button>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsBookmarked(!isBookmarked)}
-            className={isBookmarked ? 'text-yellow-500' : ''}
-          >
-            <Star className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
+
       </div>
 
       {/* Search Bar */}
@@ -211,18 +189,7 @@ export default function UnifiedJournal() {
               placeholder={currentTabInfo?.placeholder || ''}
             />
             
-            {/* Photo Upload for Main Tab */}
-            {activeTab === 'main' && (
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <Camera className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add photos to your journal entry
-                </p>
-                <Button variant="outline" size="sm">
-                  Upload Photos
-                </Button>
-              </div>
-            )}
+
           </div>
           
           {/* Entry Stats - handled by RichJournalEditor */}

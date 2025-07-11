@@ -4,16 +4,13 @@ import { useState } from "react"
 import AppCanvas from "@/components/app-canvas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Settings, Database, Palette, Bell, MessageSquare, Globe, HelpCircle, Tag, RotateCcw, Bot } from "lucide-react"
+import { Settings, Database, Palette, MessageSquare, HelpCircle, Tag } from "lucide-react"
 
-// Modal components (to be created)
+// Modal components
 import { VisualSettingsModal } from "./visual-settings-modal"
-import { LocalizationModal } from "./localization-modal"
 import { DataManagementModal } from "./data-management-modal"
-import { NotificationsModal } from "./notifications-modal"
 import { TagsModal } from "./tags-modal"
 import { SupportModal } from "./support-modal"
-import { AISettingsModal } from "./ai-settings-modal"
 
 export default function SettingsPage() {
   // Modal state management
@@ -32,32 +29,11 @@ export default function SettingsPage() {
       component: VisualSettingsModal
     },
     {
-      id: 'ai',
-      title: 'Smart Assistant',
-      description: 'Addy & Nam auto-startup, model preferences',
-      icon: Bot,
-      component: AISettingsModal
-    },
-    {
-      id: 'localization',
-      title: 'Localization',
-      description: 'Units, date formats, language preferences',
-      icon: Globe,
-      component: LocalizationModal
-    },
-    {
       id: 'data',
       title: 'Data Management',
-      description: 'Export, backup, PIN setup, and G-Spot protocol',
+      description: 'Export, backup, PIN setup, and restore default data',
       icon: Database,
       component: DataManagementModal
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      description: 'Reminder settings and alert preferences',
-      icon: Bell,
-      component: NotificationsModal
     },
     {
       id: 'tags',
@@ -84,11 +60,11 @@ export default function SettingsPage() {
             Settings & Customization
           </h1>
           <p className="text-lg text-muted-foreground">
-            Configure your Chaos Command Center to match your beautiful disaster
+            Configure your Chaos Cycle tracker to match your beautiful chaos
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {settingsCategories.map((category) => {
             const IconComponent = category.icon
             return (
@@ -116,50 +92,6 @@ export default function SettingsPage() {
           })}
         </div>
 
-        {/* QR Sync Coming Soon Card */}
-        <Card className="mt-6 opacity-60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5" />
-              QR Sync & Device Settings
-            </CardTitle>
-            <CardDescription>
-              Multi-device sync and navigation customization
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button disabled className="w-full" variant="outline">
-              Coming Soon
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Restart Onboarding */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5" />
-              Restart Onboarding
-            </CardTitle>
-            <CardDescription>
-              Reset your setup and go through the welcome flow again
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => {
-                if (confirm('This will reset your onboarding progress. Continue?')) {
-                  localStorage.removeItem('chaos-onboarding-complete')
-                  window.location.href = '/onboarding'
-                }
-              }}
-              className="w-full"
-              variant="outline"
-            >
-              Restart Setup
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Render active modal */}
         {settingsCategories.map((category) => {
@@ -173,11 +105,7 @@ export default function SettingsPage() {
           )
         })}
 
-        <div className="mt-8 text-center">
-          <Button variant="outline" onClick={() => window.history.back()}>
-            ← Back to Command Center
-          </Button>
-        </div>
+
       </AppCanvas>
     </div>
   )

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Palette } from "lucide-react"
-import { useGoblinMode } from "@/lib/goblin-mode-context"
+
 
 interface VisualSettingsModalProps {
   isOpen: boolean
@@ -17,7 +17,7 @@ interface VisualSettingsModalProps {
 export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProps) {
   const [currentTheme, setCurrentTheme] = useState('theme-lavender')
   const [currentFont, setCurrentFont] = useState('font-atkinson')
-  const { goblinMode, setGoblinMode } = useGoblinMode()
+  const [fertilityTrackingEnabled, setFertilityTrackingEnabled] = useState(true)
 
   const themes = [
     { id: 'theme-lavender', name: 'Lavender Garden', description: 'Gentle lavender serenity (default)' },
@@ -57,13 +57,20 @@ export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProp
     localStorage.setItem('chaos-font', fontId)
   }
 
-  // Load saved theme and font on component mount
+  const toggleFertilityTracking = (enabled: boolean) => {
+    setFertilityTrackingEnabled(enabled)
+    localStorage.setItem('fertility-tracking-enabled', enabled.toString())
+  }
+
+  // Load saved theme, font, and fertility tracking setting on component mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('chaos-theme') || 'theme-lavender'
     const savedFont = localStorage.getItem('chaos-font') || 'font-atkinson'
+    const savedFertilityTracking = localStorage.getItem('fertility-tracking-enabled')
 
     setCurrentTheme(savedTheme)
     setCurrentFont(savedFont)
+    setFertilityTrackingEnabled(savedFertilityTracking !== 'false') // Default to true
 
     // Apply saved theme
     themes.forEach(theme => document.body.classList.remove(theme.id))
@@ -127,27 +134,29 @@ export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProp
             </Select>
           </div>
 
-          {/* Goblin Mode Toggle */}
+          {/* Fertility Tracking Toggle */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Language Style</Label>
+            <Label className="text-sm font-medium mb-2 block">Fertility Features</Label>
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <div className="font-medium">
-                  {goblinMode ? '🧙‍♂️ Goblin Mode' : '👩‍⚕️ Professional Mode'}
+                  {fertilityTrackingEnabled ? '🌸 Fertility Tracking On' : '🌙 Basic Cycle Only'}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {goblinMode
-                    ? 'Chaotic humor and slam poetry descriptions'
-                    : 'Clinical terminology suitable for medical professionals'
+                  {fertilityTrackingEnabled
+                    ? 'Shows BBT charts, ovulation prediction, and fertility signs'
+                    : 'Hides fertility features - shows only basic cycle tracking'
                   }
                 </div>
               </div>
               <Switch
-                checked={goblinMode}
-                onCheckedChange={setGoblinMode}
+                checked={fertilityTrackingEnabled}
+                onCheckedChange={toggleFertilityTracking}
               />
             </div>
           </div>
+
+
         </div>
 
         <div className="flex justify-end gap-2 pt-4">

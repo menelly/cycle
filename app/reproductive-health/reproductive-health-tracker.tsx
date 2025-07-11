@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
-import { Calendar } from "@/components/ui/calendar"
+import { MobileCalendar } from "@/components/ui/mobile-calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
@@ -34,11 +34,13 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { TagInput } from "@/components/tag-input"
-import { useGoblinMode } from "@/lib/goblin-mode-context"
+
 import { MenstrualForm } from "./menstrual-form"
 import { FertilityForm } from "./fertility-form"
 import { BBTChart } from "./bbt-chart"
 import { ReproductiveHistory } from "./reproductive-history"
+import { CycleAnalytics } from "./cycle-analytics"
+import { OvulationPredictionCard } from "./ovulation-prediction-card"
 
 // Types for reproductive health data
 export interface ReproductiveHealthEntry {
@@ -82,11 +84,11 @@ export const OPK_LEVELS = [
 ] as const
 
 export const MOOD_OPTIONS = [
-  'happy', 'sad', 'irritable', 'anxious', 'calm', 'energetic', 'tired', 'emotional', 'stable', 'moody'
+  'happy', 'sad', 'irritable', 'anxious', 'calm', 'energetic', 'tired', 'emotional', 'stable', 'moody', 'other'
 ]
 
 export const SYMPTOM_OPTIONS = [
-  'cramps', 'headache', 'bloating', 'breast tenderness', 'back pain', 'nausea', 'acne', 'food cravings', 'insomnia', 'fatigue'
+  'cramps', 'headache', 'bloating', 'breast tenderness', 'back pain', 'nausea', 'acne', 'food cravings', 'insomnia', 'fatigue', 'other'
 ]
 
 export const FERTILITY_SYMPTOM_OPTIONS = [
@@ -94,9 +96,13 @@ export const FERTILITY_SYMPTOM_OPTIONS = [
 ]
 
 export default function ReproductiveHealthTracker() {
-  const { goblinMode } = useGoblinMode()
   const { saveData, getSpecificData, getCategoryData, deleteData, isLoading } = useDailyData()
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(() => {
+    const today = new Date()
+    console.log('🗓️ Calendar Debug: Today is', today.toISOString(), 'Display:', format(today, 'PPP'))
+    return today
+  })
+  const [fertilityTrackingEnabled, setFertilityTrackingEnabled] = useState(true)
 
   const [entries, setEntries] = useState<ReproductiveHealthEntry[]>([])
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -121,6 +127,12 @@ export default function ReproductiveHealthTracker() {
     notes: '',
     tags: []
   })
+
+  // Load fertility tracking setting
+  useEffect(() => {
+    const savedFertilityTracking = localStorage.getItem('fertility-tracking-enabled')
+    setFertilityTrackingEnabled(savedFertilityTracking !== 'false') // Default to true
+  }, [])
 
   // Load data for current date
   useEffect(() => {
@@ -260,19 +272,7 @@ export default function ReproductiveHealthTracker() {
     }))
   }
 
-  const getReproductiveGoblinism = () => {
-    const goblinisms = [
-      "The cycle sprites have been documented! 🌙🧚‍♀️",
-      "Fertility spirits are updating their magical charts! ✨📊",
-      "The hormone goblins are taking detailed notes! 🧙‍♀️📝",
-      "Reproductive wellness data filed in the enchanted archives! 🌙📚",
-      "Your body's wisdom has been recorded by the cycle sages! 🌛🔮",
-      "The ovulation oracles have updated their predictions! 🥚✨",
-      "Menstrual magic documented for future reference! 🩸🌟",
-      "The fertility forest spirits are pleased with your tracking! 🌿🧚‍♀️"
-    ]
-    return goblinisms[Math.floor(Math.random() * goblinisms.length)]
-  }
+
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -326,16 +326,12 @@ export default function ReproductiveHealthTracker() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
+                <MobileCalendar
                   selected={currentDate}
                   onSelect={(date) => {
-                    if (date) {
-                      setCurrentDate(date)
-                      setIsCalendarOpen(false)
-                    }
+                    setCurrentDate(date)
+                    setIsCalendarOpen(false)
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -347,32 +343,41 @@ export default function ReproductiveHealthTracker() {
 
       {/* Main content */}
       <Tabs defaultValue="menstrual" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 bg-card">
-          <TabsTrigger value="menstrual" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <Droplets className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">Menstrual</span>
-          </TabsTrigger>
-          <TabsTrigger value="fertility" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <Moon className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">Ovulation</span>
-          </TabsTrigger>
-          <TabsTrigger value="chart" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <Thermometer className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">BBT Chart</span>
-          </TabsTrigger>
-          <TabsTrigger value="calendar" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <CalendarIcon className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">Calendar</span>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <History className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">History</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="hidden lg:flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
-            <TrendingUp className="h-4 w-4 flex-shrink-0" />
-            <span className="text-center leading-tight">Analytics</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="space-y-2">
+          {/* Row 1: Basic cycle tracking - always visible */}
+          <TabsList className="grid w-full grid-cols-3 bg-card">
+            <TabsTrigger value="menstrual" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+              <Droplets className="h-4 w-4 flex-shrink-0" />
+              <span className="text-center leading-tight">Menstrual</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+              <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+              <span className="text-center leading-tight">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+              <History className="h-4 w-4 flex-shrink-0" />
+              <span className="text-center leading-tight">History</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Row 2: Fertility tracking - can be hidden */}
+          {fertilityTrackingEnabled && (
+            <TabsList className="grid w-full grid-cols-3 bg-card">
+              <TabsTrigger value="fertility" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+                <Moon className="h-4 w-4 flex-shrink-0" />
+                <span className="text-center leading-tight">Ovulation</span>
+              </TabsTrigger>
+              <TabsTrigger value="chart" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+                <Thermometer className="h-4 w-4 flex-shrink-0" />
+                <span className="text-center leading-tight">BBT Chart</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm">
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                <span className="text-center leading-tight">Analytics</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
+        </div>
 
         <TabsContent value="menstrual" className="mt-6">
           <MenstrualForm
@@ -393,7 +398,13 @@ export default function ReproductiveHealthTracker() {
         </TabsContent>
 
         <TabsContent value="chart" className="mt-6">
-          <BBTChart currentEntry={formData} refreshKey={chartRefreshKey} />
+          <div className="space-y-6">
+            {/* Ovulation Prediction - ON TOP like you said! */}
+            <OvulationPredictionCard entries={entries} />
+
+            {/* BBT Chart */}
+            <BBTChart entries={entries} />
+          </div>
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
@@ -407,25 +418,21 @@ export default function ReproductiveHealthTracker() {
                 Visual calendar showing your menstrual cycle, fertile days, and symptoms
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <div className="space-y-4">
-                <Calendar
-                  mode="single"
+                <MobileCalendar
                   selected={currentDate}
-                  onSelect={(date) => date && setCurrentDate(date)}
-                  className="rounded-md border"
+                  onSelect={(date) => setCurrentDate(date)}
+                  className="w-full mx-auto rounded-md border"
                   modifiers={{
-                    menstrual: entries.filter(e => e.menstrualFlow && e.menstrualFlow !== 'none').map(e => new Date(e.date)),
+                    menstrual: entries.filter(e => e.flow && e.flow !== 'none').map(e => new Date(e.date)),
                     fertile: entries.filter(e => e.cervicalFluid && ['egg-white', 'creamy'].includes(e.cervicalFluid)).map(e => new Date(e.date)),
                     ovulation: entries.filter(e => e.ovulationTest === 'positive').map(e => new Date(e.date))
                   }}
-                  modifiersStyles={{
-                    menstrual: { backgroundColor: '#ef4444', color: 'white' },
-                    fertile: { backgroundColor: '#22c55e', color: 'white' },
-                    ovulation: { backgroundColor: '#8b5cf6', color: 'white' }
-                  }}
                 />
-                <div className="flex flex-wrap gap-4 text-sm">
+
+                {/* Legend */}
+                <div className="flex flex-wrap gap-4 justify-center text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500 rounded"></div>
                     <span>Menstrual Days</span>
@@ -456,33 +463,11 @@ export default function ReproductiveHealthTracker() {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Cycle Analytics
-              </CardTitle>
-              <CardDescription>
-                Detailed analysis of your menstrual cycle patterns and trends
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">📊 Advanced Analytics</h3>
-                <p className="text-muted-foreground mb-4">
-                  Detailed cycle analysis, pattern recognition, and predictive insights coming in desktop version
-                </p>
-                <div className="text-sm text-muted-foreground">
-                  <p>• Cycle length trends and variations</p>
-                  <p>• Symptom pattern analysis</p>
-                  <p>• Fertility window predictions</p>
-                  <p>• BBT trend analysis</p>
-                  <p>• Exportable reports for healthcare providers</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CycleAnalytics
+            entries={entries}
+            lmpDate={null} // TODO: Get from user settings
+            averageCycleLength={28}
+          />
         </TabsContent>
       </Tabs>
     </div>
