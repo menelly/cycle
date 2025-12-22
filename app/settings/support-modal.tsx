@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+
 import { MessageSquare, HelpCircle, Mail, Info, ExternalLink, Heart, Code, Zap } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 
@@ -131,7 +131,7 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
                   </div>
                   <div>
                     <strong>🚨 Emergency Protocol:</strong>
-                    <p>The "Restore Default Data" button (long hold + PIN) replaces your real data with bland sample data for safety in dangerous situations.</p>
+                    <p>The &quot;Restore Default Data&quot; button (long hold + PIN) replaces your real data with bland sample data for safety in dangerous situations.</p>
                   </div>
                   <div>
                     <strong>💾 Backups:</strong>
@@ -155,10 +155,10 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
                 <div className="bg-muted p-4 rounded-lg text-sm space-y-3">
                   <div>
                     <strong>📋 Medical Summary:</strong>
-                    <p>Go to Settings → Data Management → "PDF for Doctors". This creates a clinical summary with cycle stats, pain levels, and symptom patterns.</p>
+                    <p>Go to Settings → Data Management → &quot;PDF for Doctors&quot;. This creates a clinical summary with cycle stats, pain levels, and symptom patterns.</p>
                   </div>
                   <div>
-                    <strong>📊 What's Included:</strong>
+                    <strong>📊 What&apos;s Included:</strong>
                     <p>• Average cycle length and range<br/>• Period length patterns<br/>• Pain levels and trends<br/>• Most common symptoms<br/>• 6 months of data</p>
                   </div>
                   <div>
@@ -167,7 +167,7 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
                   </div>
                   <div>
                     <strong>💾 Full Data Export:</strong>
-                    <p>For detailed analysis, use "Export Data Backup" to get all your raw data in JSON format. Some providers can import this into their systems.</p>
+                    <p>For detailed analysis, use &quot;Export Data Backup&quot; to get all your raw data in JSON format. Some providers can import this into their systems.</p>
                   </div>
                 </div>
               )}

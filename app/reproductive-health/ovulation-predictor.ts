@@ -1,4 +1,4 @@
-import { differenceInDays, format } from 'date-fns'
+import { differenceInDays } from 'date-fns'
 
 interface FertilityAnalysis {
   ovulationDetected: boolean
@@ -12,9 +12,10 @@ interface FertilityAnalysis {
 export interface CycleEntry {
   date: string
   flow?: string
-  opk?: string
+  opk?: 'negative' | 'high' | 'low' | 'peak' | null
   bbt?: number | null
   cervicalFluid?: string
+  ferning?: 'none' | 'partial' | 'full' | null
 }
 
 export interface OvulationPrediction {
@@ -33,7 +34,8 @@ export interface OvulationPrediction {
  * Weighs BBT, OPK, cervical mucus, and ferning together
  */
 function analyzeAllFertilitySigns(entries: CycleEntry[], today: Date): FertilityAnalysis {
-  const sortedEntries = entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Sort entries by date (most recent first)
+  entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   // Get recent data for each sign
   const recentOPKs = entries.filter(e => e.opk && e.opk !== 'negative')
@@ -97,7 +99,7 @@ function analyzeBBTShift(bbtEntries: CycleEntry[], today: Date): FertilityAnalys
 
   // Look for temperature shift pattern
   for (let i = 3; i < sortedBBT.length - 2; i++) {
-    const currentTemp = sortedBBT[i].bbt!
+
     const prevTemp1 = sortedBBT[i + 1].bbt!
     const prevTemp2 = sortedBBT[i + 2].bbt!
     const nextTemp1 = sortedBBT[i - 1].bbt!
@@ -145,7 +147,7 @@ function analyzeOPKWithSupport(opkEntries: CycleEntry[], cmEntries: CycleEntry[]
 
   // Check for supporting signs
   let supportingSignsCount = 0
-  let supportingDetails = []
+  const supportingDetails: string[] = []
 
   // Check cervical mucus
   const recentCM = cmEntries.find(e => differenceInDays(today, new Date(e.date)) <= 3)
@@ -266,7 +268,7 @@ export function predictOvulation(
   averageCycleLength: number = 28
 ): OvulationPrediction {
   const today = new Date()
-  const todayStr = format(today, 'yyyy-MM-dd')
+
 
   // DEBUG: Log what we're working with
   console.log('🔮 PREDICTOR DEBUG: Input entries:', entries.length)

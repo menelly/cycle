@@ -3,18 +3,19 @@
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
-import { Droplets, Heart, Activity } from 'lucide-react'
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Droplets, Heart, Activity, Calendar } from 'lucide-react'
 import { TagInput } from "@/components/tag-input"
 import { ReproductiveHealthEntry, FLOW_LEVELS, MOOD_OPTIONS, SYMPTOM_OPTIONS } from './reproductive-health-tracker'
 
 interface MenstrualFormProps {
   formData: Partial<ReproductiveHealthEntry>
-  updateFormData: (field: keyof ReproductiveHealthEntry, value: any) => void
+  updateFormData: (field: keyof ReproductiveHealthEntry, value: unknown) => void
   onSave: () => void
   isLoading: boolean
 }
@@ -55,6 +56,33 @@ export function MenstrualForm({ formData, updateFormData, onSave, isLoading }: M
                 {level.label}
               </Button>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cycle Start Date (LMP) - Always visible for cycle tracking */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-purple-500" />
+            📅 Cycle Start Date
+          </CardTitle>
+          <CardDescription>
+            When did your current cycle start? This helps track cycle length and patterns.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Label className="text-sm font-medium">First day of current cycle</Label>
+            <Input
+              type="date"
+              value={formData.lmpDate || ''}
+              onChange={(e) => updateFormData('lmpDate', e.target.value || null)}
+              className="mt-1"
+            />
+            <div className="mt-1 text-xs text-muted-foreground">
+              💡 This automatically updates when you mark a new period start
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -123,7 +151,7 @@ export function MenstrualForm({ formData, updateFormData, onSave, isLoading }: M
             🤒 Symptoms
           </CardTitle>
           <CardDescription>
-            Track any symptoms you're experiencing
+            Track any symptoms you&apos;re experiencing
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -203,8 +231,8 @@ export function MenstrualForm({ formData, updateFormData, onSave, isLoading }: M
         </CardHeader>
         <CardContent>
           <TagInput
-            tags={formData.tags || []}
-            setTags={(tags) => updateFormData('tags', tags)}
+            value={formData.tags || []}
+            onChange={(tags) => updateFormData('tags', tags)}
             placeholder="Add tags like 'heavy-day', 'pms', 'cramps'..."
           />
         </CardContent>

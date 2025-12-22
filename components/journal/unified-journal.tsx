@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -78,7 +78,7 @@ export default function UnifiedJournal() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Tab management
-  const [availableTabs, setAvailableTabs] = useState<JournalTab[]>(DEFAULT_TABS);
+  const [availableTabs] = useState<JournalTab[]>(DEFAULT_TABS);
   const [activeTab, setActiveTab] = useState('main');
 
   // UI state

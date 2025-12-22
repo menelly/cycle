@@ -22,7 +22,7 @@ export interface DailyDataRecord {
   date: string;           // '2025-06-16' - Primary organizational key
   category: string;       // 'calendar', 'tracker', 'journal', 'user'
   subcategory: string;    // 'monthly', 'pain', 'main', 'demographics'
-  content: any;           // JSON content - flexible structure
+  content: unknown;       // JSON content - flexible structure
   images?: string[];      // Array of image blob keys (for IndexedDB blob storage)
   tags?: string[];        // User-defined tags for searching
   metadata?: {
@@ -129,10 +129,14 @@ export function parseDataKey(key: string): { date: string; category: string; sub
 }
 
 /**
- * Format date for consistent storage
+ * Format date for consistent storage (timezone-safe)
+ * Uses local timezone instead of UTC to prevent date shifts
  */
 export function formatDateForStorage(date: Date): string {
-  return date.toISOString().split('T')[0]; // '2025-06-16'
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}` // '2025-06-16'
 }
 
 /**
@@ -208,33 +212,4 @@ export async function initializeDatabase(): Promise<void> {
   }
 }
 
-/**
- * Create default user tags if none exist
- */
-async function ensureDefaultTags(): Promise<void> {
-  const tagCount = await db.user_tags.count();
-  
-  if (tagCount === 0) {
-    const defaultTags: Omit<UserTag, 'id'>[] = [
-      {
-        tag_name: 'important',
-        color: '#ff6b6b',
-        category_restrictions: [],
-        is_hidden: false,
-        created_at: getCurrentTimestamp(),
-        updated_at: getCurrentTimestamp()
-      },
-      {
-        tag_name: 'medical',
-        color: '#4ecdc4',
-        category_restrictions: ['health', 'tracker'],
-        is_hidden: false,
-        created_at: getCurrentTimestamp(),
-        updated_at: getCurrentTimestamp()
-      }
-    ];
-    
-    await db.user_tags.bulkAdd(defaultTags);
-    console.log('🏷️ DEXIE: Default tags created');
-  }
-}
+

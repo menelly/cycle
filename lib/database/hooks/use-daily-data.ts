@@ -5,14 +5,11 @@
  * Handles all CRUD operations for date-based hierarchical data.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { 
-  db, 
-  DailyDataRecord, 
-  formatDateForStorage, 
-  getCurrentTimestamp,
-  generateDataKey 
+import { useState, useCallback } from 'react';
+import {
+  db,
+  DailyDataRecord,
+  getCurrentTimestamp
 } from '../dexie-db';
 
 export interface UseDailyDataReturn {
@@ -22,8 +19,8 @@ export interface UseDailyDataReturn {
   getSpecificData: (date: string, category: string, subcategory: string) => Promise<DailyDataRecord | null>;
   
   // Data manipulation
-  saveData: (date: string, category: string, subcategory: string, content: any, tags?: string[]) => Promise<void>;
-  updateData: (id: number, content: any, tags?: string[]) => Promise<void>;
+  saveData: (date: string, category: string, subcategory: string, content: unknown, tags?: string[]) => Promise<void>;
+  updateData: (id: number, content: unknown, tags?: string[]) => Promise<void>;
   deleteData: (date: string, category: string, subcategory: string) => Promise<void>;
   
   // Bulk operations
@@ -103,7 +100,7 @@ export function useDailyData(): UseDailyDataReturn {
     date: string,
     category: string,
     subcategory: string,
-    content: any,
+    content: unknown,
     tags?: string[]
   ): Promise<void> => {
     try {
@@ -157,7 +154,7 @@ export function useDailyData(): UseDailyDataReturn {
     }
   }, [getSpecificData]);
 
-  const updateData = useCallback(async (id: number, content: any, tags?: string[]): Promise<void> => {
+  const updateData = useCallback(async (id: number, content: unknown, tags?: string[]): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);

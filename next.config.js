@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Basic Next.js configuration for PWA
+  output: 'export', // Enable static export for Tauri
   webpack: (config, { isServer }) => {
     // Ignore fs module in browser (for any future Node.js dependencies)
     config.resolve.fallback = {

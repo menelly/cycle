@@ -4,7 +4,7 @@ import { useState } from "react"
 import AppCanvas from "@/components/app-canvas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Settings, Database, Palette, MessageSquare, HelpCircle, Tag } from "lucide-react"
+import { Settings, Database, Palette, MessageSquare, Tag } from "lucide-react"
 
 // Modal components
 import { VisualSettingsModal } from "./visual-settings-modal"

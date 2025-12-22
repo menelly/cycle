@@ -89,7 +89,7 @@ export function TagsModal({ isOpen, onClose }: TagsModalProps) {
     saveUserTags(updatedTags)
   }
 
-  const allTags = [...defaultTags, ...userTags]
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -123,9 +123,9 @@ export function TagsModal({ isOpen, onClose }: TagsModalProps) {
                         <TooltipContent>
                           <div className="max-w-xs">
                             {tag.name === 'NOPE' ? (
-                              <p>Tag data to ignore in analytics. Use for bad days, mistakes, or data you don't want counted.</p>
+                              <p>Tag data to ignore in analytics. Use for bad days, mistakes, or data you don&apos;t want counted.</p>
                             ) : (
-                              <p>Tag data as "confirmed bad" - you know it's not ideal but it's intentional. Helps distinguish from mistakes.</p>
+                              <p>Tag data as &quot;confirmed bad&quot; - you know it&apos;s not ideal but it&apos;s intentional. Helps distinguish from mistakes.</p>
                             )}
                           </div>
                         </TooltipContent>
@@ -218,8 +218,8 @@ export function TagsModal({ isOpen, onClose }: TagsModalProps) {
               <p>• Tags help you organize and filter your health data</p>
               <p>• Use tags to mark special circumstances, moods, or contexts</p>
               <p>• Export data by specific tags for targeted analysis</p>
-              <p>• "NOPE" tags exclude data from analytics (for bad days/mistakes)</p>
-              <p>• "I KNOW" tags mark intentionally suboptimal choices</p>
+              <p>• &quot;NOPE&quot; tags exclude data from analytics (for bad days/mistakes)</p>
+              <p>• &quot;I KNOW&quot; tags mark intentionally suboptimal choices</p>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@
  */
 
 // Home components
-export { default as HomePage } from './page';
+// export { default as HomePage } from './page'; // Using app/page.tsx instead
 
 // ============================================================================
 // HOME TYPES
@@ -65,16 +65,10 @@ export interface QuickAccessItem {
  * Get default home widgets
  */
 export function getDefaultHomeWidgets(): HomeWidget[] {
+  // Returning empty array for cycle tracker - Kyle's widgets were broken
   return [
-    {
-      id: 'welcome',
-      name: 'Welcome Message',
-      description: 'Personalized welcome with motivational quotes',
-      component: WelcomeWidget,
-      category: 'wellness',
-      enabled: true,
-      position: { row: 0, col: 0, width: 2, height: 1 }
-    },
+    // All widgets commented out due to Kyle's broken imports
+    /*
     {
       id: 'quick-trackers',
       name: 'Quick Trackers',
@@ -120,15 +114,7 @@ export function getDefaultHomeWidgets(): HomeWidget[] {
       enabled: false,
       position: { row: 4, col: 0, width: 1, height: 1 }
     },
-    {
-      id: 'survival-button',
-      name: 'Survival Button',
-      description: 'Emergency support and crisis resources',
-      component: SurvivalButtonWidget,
-      category: 'wellness',
-      enabled: true,
-      position: { row: 0, col: 2, width: 1, height: 1 }
-    }
+    */
   ];
 }
 
@@ -214,14 +200,14 @@ export function generateWidgetGrid(widgets: HomeWidget[]): HomeWidget[][] {
 // WIDGET COMPONENTS (Placeholder interfaces)
 // ============================================================================
 
-// These would be implemented as actual React components
-export interface WelcomeWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface QuickTrackersWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface TodaySummaryWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface UpcomingAppointmentsWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface MedicationRemindersWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface MoodCheckWidget extends React.ComponentType<HomeWidgetProps> {}
-export interface SurvivalButtonWidget extends React.ComponentType<HomeWidgetProps> {}
+// These would be implemented as actual React components - Kyle's broken interfaces commented out
+// export interface WelcomeWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface QuickTrackersWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface TodaySummaryWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface UpcomingAppointmentsWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface MedicationRemindersWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface MoodCheckWidget extends React.ComponentType<HomeWidgetProps> {}
+// export interface SurvivalButtonWidget extends React.ComponentType<HomeWidgetProps> {}
 
 // ============================================================================
 // HOME CONSTANTS

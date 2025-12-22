@@ -18,6 +18,8 @@ export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProp
   const [currentTheme, setCurrentTheme] = useState('theme-lavender')
   const [currentFont, setCurrentFont] = useState('font-atkinson')
   const [fertilityTrackingEnabled, setFertilityTrackingEnabled] = useState(true)
+  const [cyclePersonalityEnabled, setCyclePersonalityEnabled] = useState(true)
+  const [fertilityTrackingPurpose, setFertilityTrackingPurpose] = useState<'ttc' | 'bc'>('ttc')
 
   const themes = [
     { id: 'theme-lavender', name: 'Lavender Garden', description: 'Gentle lavender serenity (default)' },
@@ -62,15 +64,29 @@ export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProp
     localStorage.setItem('fertility-tracking-enabled', enabled.toString())
   }
 
+  const toggleCyclePersonality = (enabled: boolean) => {
+    setCyclePersonalityEnabled(enabled)
+    localStorage.setItem('cycle-personality-enabled', enabled.toString())
+  }
+
+  const handleFertilityPurposeChange = (purpose: 'ttc' | 'bc') => {
+    setFertilityTrackingPurpose(purpose)
+    localStorage.setItem('fertility-tracking-purpose', purpose)
+  }
+
   // Load saved theme, font, and fertility tracking setting on component mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('chaos-theme') || 'theme-lavender'
     const savedFont = localStorage.getItem('chaos-font') || 'font-atkinson'
     const savedFertilityTracking = localStorage.getItem('fertility-tracking-enabled')
+    const savedCyclePersonality = localStorage.getItem('cycle-personality-enabled')
+    const savedFertilityPurpose = localStorage.getItem('fertility-tracking-purpose')
 
     setCurrentTheme(savedTheme)
     setCurrentFont(savedFont)
     setFertilityTrackingEnabled(savedFertilityTracking !== 'false') // Default to true
+    setCyclePersonalityEnabled(savedCyclePersonality !== 'false') // Default to true
+    setFertilityTrackingPurpose((savedFertilityPurpose as 'ttc' | 'bc') || 'ttc') // Default to TTC
 
     // Apply saved theme
     themes.forEach(theme => document.body.classList.remove(theme.id))
@@ -156,6 +172,69 @@ export function VisualSettingsModal({ isOpen, onClose }: VisualSettingsModalProp
             </div>
           </div>
 
+          {/* Cycle Personality Toggle */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Cycle Personality</Label>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <div className="font-medium">
+                  {cyclePersonalityEnabled ? '🧚‍♀️ Cycle Goblins Active' : '📊 Clinical Mode'}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {cyclePersonalityEnabled
+                    ? 'Shows supportive messages, celebrations, and cheeky goblinisms'
+                    : 'Clean, clinical interface without personality messages'
+                  }
+                </div>
+              </div>
+              <Switch
+                checked={cyclePersonalityEnabled}
+                onCheckedChange={toggleCyclePersonality}
+              />
+            </div>
+          </div>
+
+          {/* Fertility Purpose Selection - Only show if both fertility tracking AND cycle personality are enabled */}
+          {fertilityTrackingEnabled && cyclePersonalityEnabled && (
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Fertility Tracking Purpose</Label>
+              <div className="p-4 border rounded-lg space-y-3">
+                <div className="text-xs text-muted-foreground mb-3">
+                  This helps us show the right kind of support messages for your journey
+                </div>
+
+                <div className="space-y-2">
+                  <div
+                    className={`p-3 border rounded cursor-pointer transition-colors ${
+                      fertilityTrackingPurpose === 'ttc'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-primary/50'
+                    }`}
+                    onClick={() => handleFertilityPurposeChange('ttc')}
+                  >
+                    <div className="font-medium">🍼 Trying to Conceive</div>
+                    <div className="text-xs text-muted-foreground">
+                      Gentle, hopeful support messages for your conception journey
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-3 border rounded cursor-pointer transition-colors ${
+                      fertilityTrackingPurpose === 'bc'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-primary/50'
+                    }`}
+                    onClick={() => handleFertilityPurposeChange('bc')}
+                  >
+                    <div className="font-medium">🛡️ Birth Control Tracking</div>
+                    <div className="text-xs text-muted-foreground">
+                      Relief celebration messages when cycles arrive as expected
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
 

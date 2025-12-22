@@ -165,7 +165,7 @@ export async function loadTestData(db: any) {
     const endDate = new Date() // Today
 
     // Generate realistic cycle data
-    let currentDate = new Date(startDate)
+    const currentDate = new Date(startDate)
     let cycleDay = 1
     let isInPeriod = true
     let periodLength = 5
@@ -296,7 +296,7 @@ export async function isDefaultDataOnly(db: any): Promise<boolean> {
     // If we have exactly the default counts, it's probably default data
     if (allData.length === (DEFAULT_REPRODUCTIVE_HEALTH_DATA.length + DEFAULT_JOURNAL_ENTRIES.length)) {
       // Check if any entries have the default user ID
-      return allData.some(entry => entry.metadata?.user_id === 'default-user')
+      return allData.some((entry: any) => entry.metadata?.user_id === 'default-user')
     }
 
     return false

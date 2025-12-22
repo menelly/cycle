@@ -4,15 +4,16 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Heart, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
+import { Heart, AlertCircle } from 'lucide-react'
 import { predictOvulation } from './ovulation-predictor'
 
 interface CycleEntry {
   date: string
   flow?: string
-  opk?: string
+  opk?: 'negative' | 'high' | 'low' | 'peak' | null
   bbt?: number | null
   cervicalFluid?: string
+  ferning?: 'none' | 'partial' | 'full' | null
 }
 
 interface OvulationPredictionCardProps {
@@ -29,7 +30,16 @@ export function OvulationPredictionCard({
   className 
 }: OvulationPredictionCardProps) {
   const [isClient, setIsClient] = useState(false)
-  const [prediction, setPrediction] = useState<any>(null)
+  const [prediction, setPrediction] = useState<{
+    status: string,
+    confidence: string,
+    message: string,
+    method: string,
+    daysUntilOvulation: number | null,
+    predictedDay?: number | null,
+    fertileWindowStart?: number | null,
+    fertileWindowEnd?: number | null
+  } | null>(null)
 
   useEffect(() => {
     setIsClient(true)
@@ -161,7 +171,7 @@ export function OvulationPredictionCard({
           <div className="flex justify-between text-sm">
             <span>Cycle Status</span>
             <span className={getStatusColor(prediction.status)}>
-              {prediction.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {prediction.status.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
             </span>
           </div>
           

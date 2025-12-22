@@ -19,17 +19,17 @@ interface BBTChartProps {
 export function BBTChart({ entries, className }: BBTChartProps) {
   // Fix hydration mismatch with client-side state
   const [isClient, setIsClient] = useState(false)
-  const [bbtData, setBbtData] = useState<any[]>([])
+  const [bbtData, setBbtData] = useState<Array<{date: string, bbt: number, cycleDay: number}>>([])
 
   useEffect(() => {
     setIsClient(true)
     // Process data on client side to avoid hydration mismatch
     const processedData = entries
       .filter(entry => entry.bbt !== null && entry.bbt !== undefined)
-      .map(entry => ({
+      .map((entry, index) => ({
         date: entry.date,
-        temp: entry.bbt,
-        displayDate: format(new Date(entry.date), 'MM/dd')
+        bbt: entry.bbt!,
+        cycleDay: index + 1 // Simple cycle day calculation
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
@@ -96,9 +96,10 @@ export function BBTChart({ entries, className }: BBTChartProps) {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={bbtData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="displayDate"
+            <XAxis
+              dataKey="date"
               tick={{ fontSize: 12 }}
+              tickFormatter={(date) => format(new Date(date), 'MM/dd')}
             />
             <YAxis
               domain={['dataMin - 0.5', 'dataMax + 0.5']}
@@ -111,7 +112,7 @@ export function BBTChart({ entries, className }: BBTChartProps) {
             />
             <Line
               type="monotone"
-              dataKey="temp"
+              dataKey="bbt"
               stroke="#8884d8"
               strokeWidth={2}
               dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}

@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, BookOpen, Settings, Plus, Heart, Thermometer } from 'lucide-react'
+import { Calendar, BookOpen, Settings, Plus } from 'lucide-react'
 import { useDailyData } from '@/lib/database'
-import { format, differenceInDays, startOfDay } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
+import { getTodayLocalDate } from '@/lib/utils/dateUtils'
 
 interface TodayStats {
   cycleDay: number | null
@@ -34,17 +35,9 @@ export default function MainPage() {
   const [isClient, setIsClient] = useState(false)
   const { getSpecificData } = useDailyData()
 
-  useEffect(() => {
-    setIsClient(true)
-    // Only load stats on client side to prevent hydration mismatch
-    if (typeof window !== 'undefined') {
-      loadTodayStats()
-    }
-  }, [])
-
-  const loadTodayStats = async () => {
+  const loadTodayStats = useCallback(async () => {
     try {
-      const today = format(new Date(), 'yyyy-MM-dd')
+      const today = getTodayLocalDate()
 
       // Check if user has logged anything today
       const todayData = await getSpecificData(today, 'tracker', 'reproductive-health')
@@ -53,10 +46,12 @@ export default function MainPage() {
       // Get recent reproductive health entries to calculate cycle info
       const recentEntries = []
       for (let i = 0; i < 60; i++) { // Look back 60 days
-        const date = format(new Date(Date.now() - i * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+        const lookbackDate = new Date()
+        lookbackDate.setDate(lookbackDate.getDate() - i)
+        const date = format(lookbackDate, 'yyyy-MM-dd')
         const entry = await getSpecificData(date, 'tracker', 'reproductive-health')
-        if (entry) {
-          recentEntries.push({ date, ...entry.content })
+        if (entry && typeof entry.content === 'object' && entry.content !== null) {
+          recentEntries.push({ date, ...(entry.content as Record<string, unknown>) })
         }
       }
 
@@ -70,7 +65,7 @@ export default function MainPage() {
       // Find all period starts (first day of flow after no flow)
       const periodStarts = []
       for (let i = 0; i < sortedEntries.length; i++) {
-        const entry = sortedEntries[i]
+        const entry = sortedEntries[i] as { date: string; flow?: string }
         if (entry.flow && entry.flow !== 'none') {
           // Check if this is the start of a period
           if (i === 0) {
@@ -78,7 +73,7 @@ export default function MainPage() {
             periodStarts.push(entry.date)
           } else {
             // Check if previous day had no flow
-            const prevEntry = sortedEntries[i - 1]
+            const prevEntry = sortedEntries[i - 1] as { date: string; flow?: string }
             const entryDate = new Date(entry.date)
             const prevDate = new Date(prevEntry.date)
             const daysDiff = differenceInDays(entryDate, prevDate)
@@ -95,7 +90,7 @@ export default function MainPage() {
       }
 
       // Find the most recent period start that's not today's period
-      const todayEntry = recentEntries.find(e => e.date === today)
+      const todayEntry = recentEntries.find(e => e.date === today) as { date: string; flow?: string } | undefined
       const isCurrentlyOnPeriod = todayEntry?.flow && todayEntry.flow !== 'none'
 
       if (periodStarts.length > 0) {
@@ -142,9 +137,15 @@ export default function MainPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [getSpecificData])
 
-
+  useEffect(() => {
+    setIsClient(true)
+    // Only load stats on client side to prevent hydration mismatch
+    if (typeof window !== 'undefined') {
+      loadTodayStats()
+    }
+  }, [loadTodayStats])
 
   const getFertilityStatusColor = (status: string) => {
     switch (status) {

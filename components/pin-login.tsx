@@ -3,14 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { MobileCalendar } from '@/components/ui/mobile-calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CalendarIcon, Info } from 'lucide-react'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
 
 interface PinLoginProps {
   onPinEntered: (pin: string, lmpDate?: Date, cycleLength?: number) => void
@@ -19,11 +12,7 @@ interface PinLoginProps {
 export default function PinLogin({ onPinEntered }: PinLoginProps) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
-  const [step, setStep] = useState<'pin' | 'cycle-info'>('pin')
-  const [lmpDate, setLmpDate] = useState<Date | undefined>()
-  const [cycleLength, setCycleLength] = useState<string>('')
-  const [cycleLengthOption, setCycleLengthOption] = useState<'unknown' | 'known'>('unknown')
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,35 +29,11 @@ export default function PinLogin({ onPinEntered }: PinLoginProps) {
 
     setError('')
 
-    // Check if PIN already exists (returning user)
-    const savedPin = localStorage.getItem('chaos-data-pin')
-    if (savedPin) {
-      // Returning user - just verify PIN
-      onPinEntered(pin.trim())
-    } else {
-      // New user - proceed to cycle info setup
-      setStep('cycle-info')
-    }
+    // Just submit the PIN
+    onPinEntered(pin.trim())
   }
 
-  const handleCycleInfoSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
 
-    // Validate cycle length if provided
-    if (cycleLengthOption === 'known') {
-      const lengthNum = parseInt(cycleLength)
-      if (!cycleLength || isNaN(lengthNum) || lengthNum < 21 || lengthNum > 45) {
-        setError('Please enter a valid cycle length (21-45 days)')
-        return
-      }
-    }
-
-    setError('')
-
-    // Submit all data
-    const finalCycleLength = cycleLengthOption === 'known' ? parseInt(cycleLength) : undefined
-    onPinEntered(pin.trim(), lmpDate, finalCycleLength)
-  }
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPin(e.target.value)
@@ -85,7 +50,7 @@ export default function PinLogin({ onPinEntered }: PinLoginProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handlePinSubmit} className="space-y-4">
             <div className="space-y-2">
               <Input
                 type="password"

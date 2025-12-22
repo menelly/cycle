@@ -1,39 +1,34 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+
+
+
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Slider } from "@/components/ui/slider"
+
 import { MobileCalendar } from "@/components/ui/mobile-calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+
 import { toast } from "@/hooks/use-toast"
 import { useDailyData, formatDateForStorage, CATEGORIES } from '@/lib/database'
 import { format, addDays, subDays } from 'date-fns'
+import { CyclePersonalityEngine, ConceptionConfetti } from "@/lib/cycle-personality"
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Edit,
-  Trash2,
-  Heart,
   Droplets,
   Thermometer,
-  Activity,
   Moon,
   Sparkles,
-  Settings,
   History,
   TrendingUp
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import { TagInput } from "@/components/tag-input"
+
 
 import { MenstrualForm } from "./menstrual-form"
 import { FertilityForm } from "./fertility-form"
@@ -96,7 +91,7 @@ export const FERTILITY_SYMPTOM_OPTIONS = [
 ]
 
 export default function ReproductiveHealthTracker() {
-  const { saveData, getSpecificData, getCategoryData, deleteData, isLoading } = useDailyData()
+  const { saveData, getSpecificData, deleteData, isLoading } = useDailyData()
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date()
     console.log('🗓️ Calendar Debug: Today is', today.toISOString(), 'Display:', format(today, 'PPP'))
@@ -106,8 +101,7 @@ export default function ReproductiveHealthTracker() {
 
   const [entries, setEntries] = useState<ReproductiveHealthEntry[]>([])
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<ReproductiveHealthEntry | null>(null)
-  const [chartRefreshKey, setChartRefreshKey] = useState(0)
+
 
   // Form state
   const [formData, setFormData] = useState<Partial<ReproductiveHealthEntry>>({
@@ -129,24 +123,13 @@ export default function ReproductiveHealthTracker() {
   })
 
   // Load fertility tracking setting
-  useEffect(() => {
-    const savedFertilityTracking = localStorage.getItem('fertility-tracking-enabled')
-    setFertilityTrackingEnabled(savedFertilityTracking !== 'false') // Default to true
-  }, [])
-
-  // Load data for current date
-  useEffect(() => {
-    loadEntryForDate(currentDate)
-    loadAllEntries()
-  }, [currentDate])
-
-  const loadEntryForDate = async (date: Date) => {
+  const loadEntryForDate = useCallback(async (date: Date) => {
     const dateKey = formatDateForStorage(date)
     const record = await getSpecificData(dateKey, CATEGORIES.TRACKER, 'reproductive-health')
 
     if (record?.content) {
       // Check if content is already an object or needs parsing
-      let parsed: any
+      let parsed: Partial<ReproductiveHealthEntry>
       if (typeof record.content === 'string') {
         parsed = JSON.parse(record.content)
       } else {
@@ -173,9 +156,9 @@ export default function ReproductiveHealthTracker() {
         tags: []
       })
     }
-  }
+  }, [getSpecificData])
 
-  const loadAllEntries = async () => {
+  const loadAllEntries = useCallback(async () => {
     // Load recent entries for history view - get last 30 days
     const promises = []
     for (let i = 0; i < 30; i++) {
@@ -189,41 +172,154 @@ export default function ReproductiveHealthTracker() {
       .filter(record => record?.content)
       .map(record => {
         // Check if content is already an object or needs parsing
-        let parsed: any
+        let parsed: Partial<ReproductiveHealthEntry>
         if (typeof record!.content === 'string') {
           parsed = JSON.parse(record!.content)
         } else {
-          parsed = record!.content
+          parsed = record!.content as Partial<ReproductiveHealthEntry>
         }
 
         return {
           id: record!.id?.toString() || '',
           date: record!.date,
+          flow: 'none',
+          pain: 0,
+          mood: [],
+          symptoms: [],
+          libido: 0,
+          cervicalFluid: '',
+          bbt: null,
+          energyLevel: '',
+          fertilitySymptoms: [],
+          opk: null,
+          ferning: null,
+          spermEggExposure: false,
+          lmpDate: null,
+          notes: '',
+          tags: [],
           ...parsed,
           created_at: record!.metadata?.created_at || '',
           updated_at: record!.metadata?.updated_at || ''
-        }
+        } as ReproductiveHealthEntry
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     setEntries(reproductiveEntries)
+  }, [getSpecificData])
+
+  // Helper function to detect if this is a new period start
+  const checkIfNewPeriodStart = async (currentDate: Date, currentFlow: string): Promise<boolean> => {
+    try {
+      // Get the last 7 days of entries to check for period patterns
+      const last7Days = []
+      for (let i = 1; i <= 7; i++) {
+        const checkDate = new Date(currentDate)
+        checkDate.setDate(checkDate.getDate() - i)
+        const dateKey = formatDateForStorage(checkDate)
+        const record = await getSpecificData(dateKey, CATEGORIES.TRACKER, 'reproductive-health')
+
+        if (record?.content) {
+          let parsed: Partial<ReproductiveHealthEntry>
+          if (typeof record.content === 'string') {
+            parsed = JSON.parse(record.content)
+          } else {
+            parsed = record.content
+          }
+          last7Days.push({ date: dateKey, flow: parsed.flow || 'none' })
+        } else {
+          last7Days.push({ date: dateKey, flow: 'none' })
+        }
+      }
+
+      // Check if this is a new period start:
+      // 1. Current day has flow (not 'none')
+      // 2. Previous 2-3 days had no flow or very light flow
+      const recentDays = last7Days.slice(0, 3) // Last 3 days
+      const hadNoRecentFlow = recentDays.every(day =>
+        !day.flow || day.flow === 'none' || day.flow === 'spotting'
+      )
+
+      // Also check if it's been at least 14 days since last period start
+      const lastPeriodDays = last7Days.filter(day =>
+        day.flow && day.flow !== 'none' && day.flow !== 'spotting'
+      )
+
+      // If no recent flow and current flow is significant, this is likely a new period
+      return hadNoRecentFlow && currentFlow !== 'none' && currentFlow !== 'spotting'
+
+    } catch (error) {
+      console.error('Error checking for new period start:', error)
+      return false
+    }
   }
+
+  useEffect(() => {
+    const savedFertilityTracking = localStorage.getItem('fertility-tracking-enabled')
+    setFertilityTrackingEnabled(savedFertilityTracking !== 'false') // Default to true
+  }, [])
+
+  // Load data for current date
+  useEffect(() => {
+    loadEntryForDate(currentDate)
+    loadAllEntries()
+  }, [currentDate, loadEntryForDate, loadAllEntries])
 
   const handleSave = async () => {
     try {
       const dateKey = formatDateForStorage(currentDate)
-      await saveData(dateKey, CATEGORIES.TRACKER, 'reproductive-health', formData, formData.tags)
 
-      toast({
-        title: "🌙 Reproductive Health Entry Saved!",
-        description: "Your cycle data has been recorded. The cycle spirits are taking notes! ✨",
-      })
+      // Check if this is a new period start and auto-update LMP date
+      let updatedFormData = { ...formData }
+
+      if (formData.flow && formData.flow !== 'none') {
+        // Check if this might be a new period start
+        const isNewPeriodStart = await checkIfNewPeriodStart(currentDate, formData.flow)
+
+        if (isNewPeriodStart) {
+          // Automatically update LMP date to current date for new period start
+          updatedFormData.lmpDate = dateKey
+          console.log('🩸 New period detected! Auto-updating LMP date to:', dateKey)
+
+          // Get contextual first day message based on user settings
+          const settings = CyclePersonalityEngine.loadSettings()
+          const personalityMessage = CyclePersonalityEngine.getFirstDayMessage(settings)
+
+          if (personalityMessage) {
+            toast({
+              title: "🌙 New Cycle Detected!",
+              description: personalityMessage,
+            })
+          } else {
+            // Clinical mode - no personality
+            toast({
+              title: "🌙 New Cycle Detected!",
+              description: "Automatically updated your cycle start date.",
+            })
+          }
+        }
+      }
+
+      await saveData(dateKey, CATEGORIES.TRACKER, 'reproductive-health', updatedFormData, updatedFormData.tags)
+
+      // Show contextual save message
+      const settings = CyclePersonalityEngine.loadSettings()
+      if (settings.cyclePersonalityEnabled) {
+        toast({
+          title: "🌙 Reproductive Health Entry Saved!",
+          description: "Your cycle data has been recorded. The cycle spirits are taking notes! ✨",
+        })
+      } else {
+        toast({
+          title: "Entry Saved",
+          description: "Reproductive health data recorded successfully.",
+        })
+      }
+
+      // Update local form data to reflect the LMP change
+      setFormData(updatedFormData)
 
       // Reload entries to show the new one
       await loadAllEntries()
-
-      // Trigger BBT chart refresh
-      setChartRefreshKey(prev => prev + 1)
     } catch (error) {
       console.error('Failed to save reproductive health entry:', error)
       toast({
@@ -265,7 +361,7 @@ export default function ReproductiveHealthTracker() {
     setCurrentDate(newDate)
   }
 
-  const updateFormData = (field: keyof ReproductiveHealthEntry, value: any) => {
+  const updateFormData = (field: keyof ReproductiveHealthEntry, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -427,7 +523,7 @@ export default function ReproductiveHealthTracker() {
                   modifiers={{
                     menstrual: entries.filter(e => e.flow && e.flow !== 'none').map(e => new Date(e.date)),
                     fertile: entries.filter(e => e.cervicalFluid && ['egg-white', 'creamy'].includes(e.cervicalFluid)).map(e => new Date(e.date)),
-                    ovulation: entries.filter(e => e.ovulationTest === 'positive').map(e => new Date(e.date))
+                    ovulation: entries.filter(e => e.opk === 'peak').map(e => new Date(e.date))
                   }}
                 />
 

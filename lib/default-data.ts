@@ -6,14 +6,15 @@
  * via the panic button.
  */
 
-import { useDailyData, formatDateForStorage, CATEGORIES } from './database'
-import { subDays, format } from 'date-fns'
+import { formatDateForStorage, CATEGORIES } from './database'
+import { db } from './database/dexie-db'
+import { subDays } from 'date-fns'
 
 export interface DefaultDataEntry {
   date: string
   category: string
   subcategory: string
-  content: any
+  content: unknown
   tags: string[]
 }
 
@@ -128,19 +129,22 @@ export function generateDefaultData(): DefaultDataEntry[] {
  * Load default data into the database
  */
 export async function loadDefaultData(): Promise<void> {
-  const { saveData } = useDailyData()
   const defaultEntries = generateDefaultData()
 
   try {
     // Save all default entries
     for (const entry of defaultEntries) {
-      await saveData(
-        entry.date,
-        entry.category,
-        entry.subcategory,
-        entry.content,
-        entry.tags
-      )
+      await db.daily_data.add({
+        date: entry.date,
+        category: entry.category,
+        subcategory: entry.subcategory,
+        content: entry.content,
+        tags: entry.tags,
+        metadata: {
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      })
     }
 
     // Mark that default data has been loaded
@@ -171,13 +175,16 @@ export function clearDefaultDataFlag(): void {
  * Delete all default data from the database
  */
 export async function deleteDefaultData(): Promise<void> {
-  const { deleteData } = useDailyData()
   const defaultEntries = generateDefaultData()
 
   try {
     // Delete all default entries
     for (const entry of defaultEntries) {
-      await deleteData(entry.date, entry.category, entry.subcategory)
+      await db.daily_data.where({
+        date: entry.date,
+        category: entry.category,
+        subcategory: entry.subcategory
+      }).delete()
     }
 
     // Clear the flag

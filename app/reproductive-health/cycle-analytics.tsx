@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Calendar, TrendingUp, Activity, Thermometer } from 'lucide-react'
-import { differenceInDays, format } from 'date-fns'
+import { Calendar, TrendingUp, Activity } from 'lucide-react'
+import { differenceInDays } from 'date-fns'
 
 interface CycleEntry {
   date: string
@@ -13,7 +13,9 @@ interface CycleEntry {
   pain?: number
   mood?: string[]
   bbt?: number | null
-  opk?: string
+  opk?: 'negative' | 'low' | 'high' | 'peak' | null
+  cervicalFluid?: string
+  ferning?: 'none' | 'partial' | 'full' | null
 }
 
 interface CycleAnalyticsProps {

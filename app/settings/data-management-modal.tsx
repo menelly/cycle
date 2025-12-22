@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Database, Download, Upload, Shield, Zap, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { deleteDefaultData, hasDefaultDataBeenLoaded, restoreDefaultData } from "@/lib/default-data"
+import { hasDefaultDataBeenLoaded, restoreDefaultData, deleteDefaultData } from "@/lib/default-data"
+import type { ReproductiveHealthEntry } from "@/app/reproductive-health/reproductive-health-tracker"
+import { GSpot4BoringFileExporter, BoringFileType } from "@/lib/database/g-spot-steganography"
 
 interface DataManagementModalProps {
   isOpen: boolean
@@ -169,15 +171,15 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
       }
 
       // Generate medical summary
-      const cycles = []
-      let currentCycle = []
-      let lastPeriodStart = null
+      const cycles: typeof reproductiveData[] = []
+      let currentCycle: typeof reproductiveData = []
+      let lastPeriodStart: string | null = null
 
       // Process data chronologically
       const sortedData = reproductiveData.sort((a, b) => a.date.localeCompare(b.date))
 
       for (const record of sortedData) {
-        const data = record.content
+        const data = record.content as Partial<ReproductiveHealthEntry>
         if (data.flow && data.flow !== 'none') {
           if (!lastPeriodStart) {
             lastPeriodStart = record.date
@@ -225,7 +227,7 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
       }
 
       // Pain analysis
-      const painData = sortedData.filter(r => r.content.pain > 0).map(r => r.content.pain)
+      const painData = sortedData.filter(r => (r.content as Partial<ReproductiveHealthEntry>).pain && (r.content as Partial<ReproductiveHealthEntry>).pain! > 0).map(r => (r.content as Partial<ReproductiveHealthEntry>).pain!)
       if (painData.length > 0) {
         const avgPain = (painData.reduce((a, b) => a + b, 0) / painData.length).toFixed(1)
         const maxPain = Math.max(...painData)
@@ -234,15 +236,16 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
       }
 
       // Common symptoms
-      const allSymptoms = []
+      const allSymptoms: string[] = []
       sortedData.forEach(r => {
-        if (r.content.symptoms) {
-          allSymptoms.push(...r.content.symptoms)
+        const content = r.content as Partial<ReproductiveHealthEntry>
+        if (content.symptoms) {
+          allSymptoms.push(...content.symptoms)
         }
       })
 
       if (allSymptoms.length > 0) {
-        const symptomCounts = {}
+        const symptomCounts: Record<string, number> = {}
         allSymptoms.forEach(symptom => {
           symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1
         })
@@ -306,25 +309,42 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
         timestamp: new Date().toISOString(),
         data: allData,
         tags: userTags,
-        _cycle_backup: true // Secret identifier
+        _cycle_backup: true
       }
 
-      // Generate webpack-style filename
-      const hash = Math.random().toString(36).substring(2, 10)
-      const filename = `data-export-${hash}.json`
+      // Use G-Spot 4.0 steganography to hide data in innocent file
+      const fileTypes = [
+        { type: BoringFileType.COSTCO_RECEIPT, name: "Shopping Receipt" },
+        { type: BoringFileType.FAMILY_RECIPES, name: "Recipe Collection" },
+        { type: BoringFileType.WIFI_PASSWORDS, name: "WiFi Backup" }
+      ]
 
-      // Download file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      const selectedType = Math.floor(Math.random() * fileTypes.length)
+      const fileType = fileTypes[selectedType]
+
+      const result = await GSpot4BoringFileExporter.exportMedicalData(
+        exportData,
+        enteredPin,
+        fileType.type
+      )
+
+      if (!result.success) {
+        throw new Error(result.message)
+      }
+
+      // Download the innocent-looking file
+      const file = result.files[0]
+      const blob = new Blob([file.content], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = filename
+      a.download = file.filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      alert(`✅ Data exported as ${filename}\n\nSave this file somewhere safe! You can import it later to restore your data.`)
+      alert(`✅ Data exported successfully!\n\nYour cycle data is safely stored in the downloaded file. Keep it somewhere safe - you can import it later to restore your data.`)
 
     } catch (error) {
       console.error('Export error:', error)
@@ -389,12 +409,34 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
 
     try {
       const fileContent = await importFile.text()
-      const importData = JSON.parse(fileContent)
 
-      // Verify this is a Cycle backup file
-      if (!importData._cycle_backup) {
-        alert("❌ Invalid backup file. Please select a valid Cycle data export.")
-        return
+      // Try to import using G-Spot 4.0 steganography first
+      let importData
+      try {
+        const result = await GSpot4BoringFileExporter.importMedicalData(
+          [{ filename: importFile.name, content: fileContent }],
+          enteredPin
+        )
+
+        if (result.success) {
+          importData = result.data
+        } else {
+          throw new Error("Not a steganographic file")
+        }
+      } catch (stegError) {
+        // Fallback to regular JSON import for backwards compatibility
+        try {
+          importData = JSON.parse(fileContent)
+
+          // Verify this is a Cycle backup file
+          if (!importData._cycle_backup) {
+            alert("❌ Invalid backup file. Please select a valid Cycle data export.")
+            return
+          }
+        } catch (jsonError) {
+          alert("❌ Invalid file format. Please select a valid Cycle data export.")
+          return
+        }
       }
 
       if (!confirm("⚠️ IMPORT DATA ⚠️\n\nThis will replace ALL current data with the imported data. This action cannot be undone.\n\nMake sure you have a current backup before proceeding!\n\nContinue with import?")) {
@@ -473,29 +515,55 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
       window.location.reload() // Refresh to show empty state
     } catch (error) {
       console.error('Error clearing data:', error)
-      alert(`❌ Error occurred while clearing data: ${error.message}`)
+      alert(`❌ Error occurred while clearing data: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const handleRestoreDefaults = async () => {
+  const handleGSpotProtocol = async () => {
     if (!hasPin) {
-      alert("PIN required to restore default data")
+      alert("PIN required to execute G-Spot Protocol")
       return
     }
 
-    const enteredPin = prompt("Enter your PIN to restore default data:")
+    const enteredPin = prompt("Enter your PIN to execute G-Spot Protocol:")
     const savedPin = localStorage.getItem('chaos-data-pin')
 
     if (enteredPin === savedPin) {
-      if (confirm("⚠️ RESTORE DEFAULT DATA ⚠️\n\nThis will completely erase all your current data and restore the app to its default state with sample data. This action cannot be undone.\n\nAre you sure you want to continue?")) {
+      if (confirm("⚡ G-SPOT PROTOCOL ⚡\n\nThis will completely replace all your current data with algorithmically generated bland patterns that appear normal but contain no real personal information. This action cannot be undone.\n\nThey can't find it if they don't think it exists anyways. 😉\n\nAre you sure you want to continue?")) {
         try {
           await restoreDefaultData()
-          alert("✅ Default data restored successfully. The app has been reset to its initial state.")
+          alert("⚡ G-Spot Protocol executed successfully. Your data has been replaced with unremarkable patterns.")
           onClose() // Close the modal
           window.location.reload() // Refresh to show clean state
         } catch (error) {
-          console.error('Error restoring default data:', error)
-          alert("❌ Error occurred while restoring default data.")
+          console.error('Error executing G-Spot Protocol:', error)
+          alert("❌ Error occurred while executing G-Spot Protocol.")
+        }
+      }
+    } else {
+      alert("Incorrect PIN")
+    }
+  }
+
+  const handleDeleteDefaultData = async () => {
+    if (!hasPin) {
+      alert("PIN required to delete default data")
+      return
+    }
+
+    const enteredPin = prompt("Enter your PIN to delete default data:")
+    const savedPin = localStorage.getItem('chaos-data-pin')
+
+    if (enteredPin === savedPin) {
+      if (confirm("🗑️ DELETE DEFAULT DATA 🗑️\n\nThis will remove all the sample entries that were loaded when you first set up the app. Your real data will remain untouched.\n\nAre you sure you want to continue?")) {
+        try {
+          await deleteDefaultData()
+          alert("✅ Default data deleted successfully. Sample entries have been removed.")
+          onClose() // Close the modal
+          window.location.reload() // Refresh to show updated state
+        } catch (error) {
+          console.error('Error deleting default data:', error)
+          alert("❌ Error occurred while deleting default data.")
         }
       }
     } else {
@@ -598,8 +666,11 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
               disabled={!hasPin}
             >
               <Download className="h-4 w-4 mr-2" />
-              Export Data Backup
+              🧾 Export Data Backup
             </Button>
+            <p className="text-xs text-muted-foreground">
+              The cycle goblins will disguise your data in a perfectly innocent file! 🧚‍♀️
+            </p>
 
             <Button
               onClick={handleLoadTestData}
@@ -651,8 +722,11 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
                 disabled={!hasPin || !importFile}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Import Data Backup
+                📂 Import Data Backup
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Upload your innocent-looking file and the cycle spirits will extract your data! ✨
+              </p>
             </div>
 
             {!hasPin && (
@@ -688,16 +762,17 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
           <div className="p-4 border-2 border-destructive/20 rounded-lg bg-destructive/5">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="h-4 w-4 text-destructive" />
-              <Label className="text-sm font-medium text-destructive">Emergency Protocol</Label>
+              <Label className="text-sm font-medium text-destructive">⚡ G-Spot Protocol</Label>
+              <Badge variant="destructive" className="text-xs">DANGER</Badge>
             </div>
             
             <Button
               variant="destructive"
               className="w-full"
               onClick={handleGSpotTap}
-              onMouseDown={(e) => {
+              onMouseDown={() => {
                 const timer = setTimeout(() => {
-                  handleRestoreDefaults()
+                  handleGSpotProtocol()
                 }, 1000)
 
                 const cleanup = () => {
@@ -707,9 +782,9 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
                 document.addEventListener('mouseup', cleanup)
               }}
             >
-              🔄 Restore Default Data
+              ⚡ G-Spot Protocol
             </Button>
-            
+
             <p className="text-xs text-muted-foreground mt-2">
               Tap to explain • Long hold + PIN to execute
             </p>
@@ -717,9 +792,12 @@ export function DataManagementModal({ isOpen, onClose }: DataManagementModalProp
             {showGSpotExplanation && (
               <div className="mt-3 p-3 bg-muted rounded border">
                 <p className="text-sm">
-                  <strong>Restore Default Data:</strong> Resets the app to its initial state with sample data.
-                  This completely erases all current data and restores the original starter content that came
-                  with the app. Useful for starting fresh or if you want to return to the default setup.
+                  <strong>G-Spot Protocol:</strong> Emergency data replacement with bland, unremarkable patterns
+                  that appear normal but contain no real personal information. Use this if you need to quickly
+                  sanitize your data for privacy reasons.
+                </p>
+                <p className="text-sm mt-2 font-medium text-destructive">
+                  They can't find it if they don't think it exists anyways. 😉
                 </p>
                 <Button
                   variant="ghost"

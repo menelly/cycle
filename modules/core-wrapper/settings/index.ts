@@ -6,7 +6,7 @@
  */
 
 // Settings components
-export { default as SettingsPage } from './page';
+// export { default as SettingsPage } from './page'; // Using app/settings/page.tsx instead
 // export { default as VisualSettingsModal } from './visual-settings-modal';
 // export { default as AISettingsModal } from './ai-settings-modal';
 // export { default as LocalizationModal } from './localization-modal';
@@ -183,17 +183,17 @@ export function validateSettings(settings: Partial<AppSettings>): { isValid: boo
   const errors: string[] = [];
   
   // Validate theme
-  if (settings.theme && !AVAILABLE_THEMES.includes(settings.theme)) {
+  if (settings.theme && !AVAILABLE_THEMES.includes(settings.theme as any)) {
     errors.push(`Invalid theme: ${settings.theme}`);
   }
   
   // Validate font
-  if (settings.font && !AVAILABLE_FONTS.includes(settings.font)) {
+  if (settings.font && !AVAILABLE_FONTS.includes(settings.font as any)) {
     errors.push(`Invalid font: ${settings.font}`);
   }
   
   // Validate locale
-  if (settings.locale && !AVAILABLE_LOCALES.includes(settings.locale)) {
+  if (settings.locale && !AVAILABLE_LOCALES.includes(settings.locale as any)) {
     errors.push(`Invalid locale: ${settings.locale}`);
   }
   

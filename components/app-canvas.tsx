@@ -9,9 +9,9 @@ interface AppCanvasProps {
   currentPage?: string
 }
 
-export default function AppCanvas({ children, currentPage = "index" }: AppCanvasProps) {
+export default function AppCanvas({ children }: AppCanvasProps) {
   // Simplified canvas - sidebar is now handled at layout level
-  const [deviceOverride, setDeviceOverride] = useState<'desktop' | 'tablet' | 'mobile' | null>(null)
+  const [deviceOverride] = useState<'desktop' | 'tablet' | 'mobile' | null>(null)
 
   // Apply device override classes
   const getDeviceClasses = () => {

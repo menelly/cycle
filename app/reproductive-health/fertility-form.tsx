@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Slider } from "@/components/ui/slider"
-import { Thermometer, Moon, Activity, Droplets, Calendar } from 'lucide-react'
+
+import { Thermometer, Activity, Calendar } from 'lucide-react'
 import { TagInput } from "@/components/tag-input"
+import { CyclePersonalityEngine, ConceptionConfetti } from "@/lib/cycle-personality"
+import { toast } from "@/hooks/use-toast"
 import { ReproductiveHealthEntry, OPK_LEVELS, FERTILITY_SYMPTOM_OPTIONS } from './reproductive-health-tracker'
 
 export const CERVICAL_FLUID_OPTIONS = [
@@ -29,7 +31,7 @@ export const FERNING_OPTIONS = [
 
 interface FertilityFormProps {
   formData: Partial<ReproductiveHealthEntry>
-  updateFormData: (field: keyof ReproductiveHealthEntry, value: any) => void
+  updateFormData: (field: keyof ReproductiveHealthEntry, value: unknown) => void
   onSave: () => void
   isLoading: boolean
 }
@@ -260,10 +262,9 @@ export function FertilityForm({ formData, updateFormData, onSave, isLoading }: F
                 <Label className="text-sm font-medium">Custom Tags</Label>
                 <div className="mt-2">
                   <TagInput
-                    tags={formData.tags || []}
-                    setTags={(tags) => updateFormData('tags', tags)}
+                    value={formData.tags || []}
+                    onChange={(tags) => updateFormData('tags', tags)}
                     placeholder="Add tags like 'ovulation', 'fertile-window', 'ttc'..."
-                    categoryFilter={['reproductive-health', 'fertility']}
                   />
                 </div>
               </div>
@@ -278,7 +279,29 @@ export function FertilityForm({ formData, updateFormData, onSave, isLoading }: F
                   type="checkbox"
                   id="spermEggExposure"
                   checked={formData.spermEggExposure || false}
-                  onChange={(e) => updateFormData('spermEggExposure', e.target.checked)}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked
+                    updateFormData('spermEggExposure', isChecked)
+
+                    // Show confetti and celebration message if checking the box
+                    if (isChecked) {
+                      const settings = CyclePersonalityEngine.loadSettings()
+
+                      if (CyclePersonalityEngine.shouldShowConceptionConfetti(settings)) {
+                        // Trigger confetti animation
+                        ConceptionConfetti.createConfettiExplosion(e.target)
+
+                        // Show celebration message
+                        const celebrationMessage = CyclePersonalityEngine.getConceptionCelebrationMessage(settings)
+                        if (celebrationMessage) {
+                          toast({
+                            title: "🎉 Conception Opportunity Noted!",
+                            description: celebrationMessage,
+                          })
+                        }
+                      }
+                    }
+                  }}
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
                 <Label htmlFor="spermEggExposure" className="text-sm font-semibold cursor-pointer">

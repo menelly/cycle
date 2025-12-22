@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { initializeDatabase, db } from '../dexie-db';
+import { initializeDatabase } from '../dexie-db';
 
 export interface UseDatabaseReturn {
   isInitialized: boolean;
